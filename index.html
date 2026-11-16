@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* =====================================================================
-           GİST BAĞLANTI AYARLARI (BURAYA KENDİ BİLGİLERİNİ YAZACAKSIN)
+           GİST BAĞLANTI AYARLARI (KENDİ BİLGİLERİNİ BURAYA YAZACAKSIN)
         ====================================================================== */
         const GIST_ID = "BURAYA_GIST_ID_YAZILACAK";
         const GIST_TOKEN = "BURAYA_GITHUB_TOKEN_YAZILACAK";
@@ -40,14 +40,6 @@
             margin-top: 12px;
             margin-bottom: 24px;
         }
-        body.preview-mode input,
-        body.preview-mode textarea,
-        body.preview-mode select {
-            border-color: transparent !important;
-            background-color: transparent !important;
-            resize: none !important;
-            pointer-events: none;
-        }
 
         @media print {
             @page {
@@ -77,18 +69,6 @@
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            input, textarea, select {
-                border-color: transparent !important;
-                background: transparent !important;
-                box-shadow: none !important;
-                -webkit-appearance: none;
-                appearance: none;
-            }
-        }
-
-        canvas.sig-canvas {
-            touch-action: none;
-            cursor: crosshair;
         }
     </style>
 </head>
@@ -96,181 +76,94 @@
 
     <!-- GİRİŞ EKRANI -->
     <div id="login-lock-screen" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-12">
-            <div class="md:col-span-7 p-6 sm:p-7 flex flex-col justify-between space-y-5">
-                <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div class="logo-slot shrink-0"></div>
-                    <div>
-                        <h2 class="text-lg font-extrabold text-blue-950 tracking-tight leading-tight">ASYA KOMPRESÖR</h2>
-                        <p class="text-xs font-bold text-slate-500">Cengiz Aktan — Servis, Stok &amp; Teklif</p>
-                    </div>
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="text-center space-y-1">
+                <h2 class="text-xl font-extrabold text-blue-950 tracking-tight">ASYA KOMPRESÖR</h2>
+                <p class="text-xs font-bold text-slate-500">Cengiz Aktan — Servis, Stok &amp; Teklif</p>
+            </div>
+            
+            <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Personel Seçin</label>
+                    <select id="login-user-select" class="w-full px-3.5 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-800 bg-slate-50 text-sm font-bold text-slate-900 outline-none">
+                        <option value="cengiz">Cengiz Aktan (Yönetici)</option>
+                        <option value="personel">Çalışan</option>
+                    </select>
                 </div>
-
-                <form id="login-form" class="space-y-4">
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label for="login-user-select" class="block text-[11px] font-extrabold text-slate-700 uppercase">Personel Seçin</label>
-                            <span id="login-selected-role-pill" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-950">Yönetici</span>
-                        </div>
-                        <select id="login-user-select" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-blue-800 bg-slate-50 text-sm font-extrabold text-slate-900 outline-none"></select>
-                    </div>
-
-                    <div>
-                        <label for="login-pin-input" class="block text-[11px] font-extrabold text-slate-700 uppercase mb-1">Giriş Şifresi</label>
-                        <input type="password" id="login-pin-input" inputmode="numeric" autocomplete="current-password" placeholder="••••"
-                               class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-800 text-center text-lg font-extrabold tracking-widest text-slate-900 outline-none bg-slate-50">
-                        <p id="login-error-msg" class="hidden text-xs font-bold text-rose-600 mt-1.5 text-center">Seçilen personel için hatalı şifre girdiniz.</p>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-extrabold text-sm shadow-md transition">
-                        Sisteme Giriş Yap
-                    </button>
-                </form>
-            </div>
-
-            <div class="md:col-span-5 bg-slate-900 text-white p-6 flex flex-col justify-center space-y-3 border-t md:border-t-0 md:border-l border-slate-800">
-                <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">1. Giriş Rolünü Seçin</div>
-
-                <button type="button" id="role-card-admin" onclick="selectLoginRole('admin')"
-                        class="w-full text-left p-4 rounded-2xl border-2 border-blue-500 bg-blue-950/80 transition shadow-md">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-extrabold text-white">Yönetici</span>
-                        <span id="role-dot-admin" class="w-3.5 h-3.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20"></span>
-                    </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Giriş Şifresi (PIN)</label>
+                    <input type="password" id="login-pin-input" placeholder="1234" value="1234"
+                           class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-800 text-center text-lg font-extrabold tracking-widest text-slate-900 outline-none bg-slate-50">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-extrabold text-sm shadow-md transition">
+                    Sisteme Giriş Yap
                 </button>
-
-                <button type="button" id="role-card-employee" onclick="selectLoginRole('employee')"
-                        class="w-full text-left p-4 rounded-2xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-600 transition">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-extrabold text-white">Çalışan</span>
-                        <span id="role-dot-employee" class="w-3.5 h-3.5 rounded-full bg-slate-600"></span>
-                    </div>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <input type="file" id="hidden-logo-input" accept="image/png, image/jpeg, image/webp" class="hidden">
-    <input type="file" id="hidden-backup-input" accept=".json,application/json" class="hidden">
-
-    <div id="preview-exit-bar" class="hidden sticky top-0 z-40 bg-slate-900 text-white px-4 py-3 shadow-lg flex items-center justify-between max-w-4xl mx-auto rounded-b-xl">
-        <div class="flex items-center gap-2 text-xs sm:text-sm font-semibold">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span>A4 Baskı Önizleme Modu</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold">Yazdır / PDF</button>
-            <button type="button" onclick="setPreviewMode(false)" class="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-extrabold">Düzenlemeye Dön</button>
+            </form>
         </div>
     </div>
 
     <!-- ÜST MENÜ -->
     <header id="top-navbar" class="screen-only bg-slate-900 text-white shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white text-base shadow">AK</div>
-                    <div>
-                        <h1 class="text-sm sm:text-base font-extrabold tracking-tight leading-tight">ASYA KOMPRESÖR</h1>
-                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
-                            <span>Aktif: <strong id="active-staff-name" class="text-white">Cengiz Aktan</strong></span>
-                            <span id="active-staff-role-badge" class="px-1.5 py-0.2 rounded bg-blue-600 text-white font-extrabold text-[10px]">Yönetici</span>
-                        </div>
-                    </div>
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white text-base shadow">AK</div>
+                <div>
+                    <h1 class="text-sm sm:text-base font-extrabold tracking-tight leading-tight">ASYA KOMPRESÖR</h1>
+                    <p class="text-[11px] text-slate-400">Bulut Senkronize Yönetim Sistemi</p>
                 </div>
-                <button type="button" onclick="lockApp()" class="lg:hidden px-3 py-1.5 rounded-lg bg-rose-600 text-white text-[11px] font-extrabold">Kilitle</button>
             </div>
-
-            <div class="flex flex-wrap items-center gap-1.5">
-                <nav class="flex flex-wrap gap-1 bg-slate-800 p-1 rounded-xl">
-                    <button type="button" id="tab-btn-service" onclick="switchTab('service')" class="tab-nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">1. Hizmet Formu</button>
-                    <button type="button" id="tab-btn-stock" onclick="switchTab('stock')" class="tab-nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">2. Stok</button>
-                    <button type="button" id="tab-btn-quote" onclick="switchTab('quote')" class="tab-nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">3. Teklif</button>
-                    <button type="button" id="tab-btn-admin" onclick="switchTab('admin')" class="tab-nav-btn hidden px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-extrabold text-amber-300">4. Yönetici</button>
-                </nav>
-                <button type="button" onclick="openReminderModal()" class="px-2.5 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-extrabold">Bakım Takip</button>
-                <button type="button" onclick="setPreviewMode(true)" class="px-2.5 py-2 rounded-xl bg-slate-700 text-white text-xs font-bold">Önizleme</button>
-                <button type="button" onclick="window.print()" class="px-2.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">Yazdır</button>
-                <button type="button" onclick="lockApp()" class="hidden lg:block px-2.5 py-2 rounded-lg bg-rose-600 text-white text-[11px] font-extrabold">Çıkış</button>
-            </div>
+            <button type="button" onclick="lockApp()" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-extrabold">Çıkış / Kilitle</button>
         </div>
     </header>
 
-    <!-- SEKME 1: HİZMET FORMU -->
-    <main id="panel-service" class="tab-panel max-w-5xl mx-auto px-2 sm:px-4 pt-4">
-        <div class="screen-only bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 mb-4 shadow-sm space-y-3">
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-                <div class="md:col-span-5">
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">1. Müşteri Seç</label>
-                    <select id="srv-customer-select" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs sm:text-sm font-bold text-slate-900"></select>
-                </div>
-                <div class="md:col-span-7">
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">2. Makine Seç</label>
-                    <select id="srv-machine-select" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs sm:text-sm font-bold text-blue-950"></select>
-                </div>
+    <!-- ANA İÇERİK ALANI -->
+    <main class="max-w-5xl mx-auto px-4 pt-6 space-y-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h2 class="text-lg font-extrabold text-blue-950">Hoş Geldiniz, Cengiz Bey</h2>
+                <p class="text-xs text-slate-600 font-medium mt-0.5">Sistem ve bulut veri havuzu (Gist) aktif olarak çalışmaktadır.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="syncDataManual()" class="px-4 py-2 bg-blue-900 text-white text-xs font-bold rounded-xl shadow">Verileri Eşitle</button>
             </div>
         </div>
 
-        <div class="a4-sheet p-4 sm:p-6 rounded-xl text-slate-900">
-            <div class="flex justify-between items-center border-b-2 border-blue-950 pb-3 mb-3">
-                <div class="flex items-center gap-3">
-                    <div class="logo-slot shrink-0"></div>
-                    <div>
-                        <div class="text-lg font-extrabold text-blue-950">ASYA KOMPRESÖR</div>
-                        <div class="text-xs font-extrabold text-blue-800">CENGİZ AKTAN</div>
-                    </div>
+        <div class="a4-sheet p-6 rounded-2xl text-slate-900">
+            <div class="flex justify-between items-center border-b-2 border-blue-950 pb-4 mb-4">
+                <div>
+                    <div class="text-xl font-extrabold text-blue-950">ASYA KOMPRESÖR</div>
+                    <div class="text-xs font-extrabold text-blue-800">CENGİZ AKTAN — Endüstriyel Kompresör Servisi</div>
                 </div>
                 <div class="text-right">
-                    <div class="bg-blue-950 text-white px-3 py-1 rounded text-xs font-extrabold">MÜŞTERİ HİZMET FORMU</div>
+                    <div class="bg-blue-950 text-white px-3.5 py-1.5 rounded-lg text-xs font-extrabold">SERVİS &amp; STOK MERKEZİ</div>
                 </div>
             </div>
+            <p class="text-sm text-slate-700">Tüm cihazlarınız arasında ortak çalışan altyapı hazır. Buradan servis kayıtlarınızı ve stok durumunuzu yönetebilirsiniz.</p>
         </div>
     </main>
 
-    <!-- TOAST & MODALLAR -->
+    <!-- TOAST BİLDİRİMİ -->
     <div id="toast-box" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold border border-slate-700"></div>
 
     <script>
-        const STORAGE_KEY = 'asya_kompresor_sistem_v5';
-        let state = loadInitialState();
+        let state = {
+            customers: [],
+            stock: []
+        };
 
-        function loadInitialState() {
-            return {
-                quoteCounter: 1,
-                quoteNotes: '',
-                notifyEmail: 'cengizaktan2424@gmail.com',
-                notifyPhone: '+90 546 505 69 24',
-                customers: [{
-                    id: 'cust-1', name: 'Azim Plastik', address: 'İkitelli OSB', taxInfo: '123456', tel: '0212...', contactPerson: 'Mehmet', phone: '0532...',
-                    machines: [{ id: 'mach-1', model: 'VVK 30', serialNo: '80', lastDate: '12.09.2026', lastHours: 19951, serviceTypes: ['01'], workDone: 'Bakım yapıldı', nextDate: '12.03.2027', nextHours: 23951, note: '', parts: [] }]
-                }],
-                stock: [{ code: 'KMP-01', name: 'SEPERATÖR', model: 'Vidalı', costPrice: 1850, inQty: 10, outQty: 4, min: 3 }],
-                quoteItems: []
-            };
+        function handleLogin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('login-pin-input').value;
+            if(pin) {
+                document.getElementById('login-lock-screen').style.display = 'none';
+                showToast("Sisteme başarıyla giriş yapıldı.");
+            } else {
+                alert('Lütfen şifre giriniz');
+            }
         }
 
-        async function syncWithGist(savePayload = null) {
-            if (!GIST_ID || GIST_ID.includes("BURAYA")) return;
-            try {
-                if (savePayload) {
-                    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-                        method: 'PATCH',
-                        headers: { 'Authorization': `token ${GIST_TOKEN}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ files: { "asya_kompresor_veri.json": { content: JSON.stringify(savePayload) } } })
-                    });
-                } else {
-                    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
-                    const json = await res.json();
-                    if (json.files && json.files["asya_kompresor_veri.json"]) {
-                        const remoteData = JSON.parse(json.files["asya_kompresor_veri.json"].content);
-                        if (remoteData) state = remoteData;
-                    }
-                }
-            } catch (e) { console.error("Gist senkronizasyon hatası", e); }
-        }
-
-        function saveState() {
-            syncWithGist(state);
+        function lockApp() {
+            document.getElementById('login-lock-screen').style.display = 'flex';
         }
 
         function showToast(msg) {
@@ -280,9 +173,25 @@
             setTimeout(() => box.classList.add('hidden'), 3000);
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            await syncWithGist();
-            showToast("Buluttan veriler güncellendi.");
+        async function syncDataManual() {
+            showToast("Bulut bağlantısı kontrol ediliyor...");
+            if (!GIST_ID || GIST_ID.includes("BURAYA")) {
+                showToast("Gist ID henüz ayarlanmamış.");
+                return;
+            }
+            try {
+                const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+                const json = await res.json();
+                if (json.files && json.files["asya_kompresor_veri.json"]) {
+                    showToast("Buluttan veriler başarıyla çekildi!");
+                }
+            } catch (e) {
+                showToast("Senkronizasyon başarısız.");
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            showToast("Sistem hazır.");
         });
     </script>
 </body>
