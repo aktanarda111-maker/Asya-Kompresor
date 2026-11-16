@@ -1,351 +1,1404 @@
 <!DOCTYPE html>
-<html lang="tr" class="h-full bg-slate-950">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASYA KOMPRESÖR - Yönetim ve Servis Paneli</title>
+    <title>ASYA KOMPRESÖR — Dijital Servis, Stok ve Teklif Sistemi</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+        .a4-sheet {
+            background: #ffffff;
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+            border: 1px solid #cbd5e1;
+        }
+        body.preview-mode {
+            background-color: #334155;
+        }
+        body.preview-mode .screen-only {
+            display: none !important;
+        }
+        body.preview-mode .a4-sheet {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: none;
+            margin-top: 12px;
+            margin-bottom: 24px;
+        }
+        body.preview-mode input,
+        body.preview-mode textarea,
+        body.preview-mode select {
+            border-color: transparent !important;
+            background-color: transparent !important;
+            resize: none !important;
+            pointer-events: none;
+        }
         @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; color: black !important; }
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+            body {
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .screen-only,
+            #top-navbar,
+            #preview-exit-bar,
+            #toast-box,
+            #login-lock-screen {
+                display: none !important;
+            }
+            .tab-panel.hidden {
+                display: none !important;
+            }
+            .a4-sheet {
+                box-shadow: none !important;
+                border: none !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            input, textarea, select {
+                border-color: transparent !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                -webkit-appearance: none;
+                appearance: none;
+            }
+        }
+        canvas.sig-canvas {
+            touch-action: none;
+            cursor: crosshair;
         }
     </style>
 </head>
-<body class="h-full font-sans text-slate-100 antialiased selection:bg-cyan-500 selection:text-white">
+<body class="min-h-screen pb-12">
 
-    <div id="app" class="min-h-full flex flex-col">
-        <!-- Üst Navigasyon -->
-        <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 no-print">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-cyan-600 p-2 rounded-lg text-white">
-                        <i data-lucide="cpu" class="w-6 h-6"></i>
+    <!-- GİRİŞ EKRANI -->
+    <div id="login-lock-screen" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 grid grid-cols-1 md:grid-cols-12">
+            <div class="md:col-span-7 p-6 sm:p-7 flex flex-col justify-between space-y-5">
+                <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div class="logo-slot shrink-0"></div>
+                    <div>
+                        <h2 class="text-lg font-extrabold text-blue-950 tracking-tight leading-tight">ASYA KOMPRESÖR</h2>
+                        <p class="text-xs font-bold text-slate-500">Cengiz Aktan — Servis, Stok &amp; Teklif</p>
+                    </div>
+                </div>
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="login-user-select" class="block text-[11px] font-extrabold text-slate-700 uppercase">Personel Seçin</label>
+                            <span id="login-selected-role-pill" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-950">Yönetici</span>
+                        </div>
+                        <select id="login-user-select" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 focus:border-blue-800 bg-slate-50 text-sm font-extrabold text-slate-900 outline-none"></select>
                     </div>
                     <div>
-                        <h1 class="font-bold text-lg tracking-wide text-white">ASYA KOMPRESÖR</h1>
-                        <p class="text-xs text-slate-400">Endüstriyel Hava Sistemleri Yönetim Paneli</p>
+                        <label for="login-pin-input" class="block text-[11px] font-extrabold text-slate-700 uppercase mb-1">Giriş Şifresi</label>
+                        <input type="password" id="login-pin-input" inputmode="numeric" autocomplete="current-password" placeholder="••••"
+                               class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-800 text-center text-lg font-extrabold tracking-widest text-slate-900 outline-none bg-slate-50">
+                        <p id="login-error-msg" class="hidden text-xs font-bold text-rose-600 mt-1.5 text-center">Seçilen personel için hatalı şifre girdiniz.</p>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span id="currentTime" class="text-xs text-slate-400 hidden sm:inline"></span>
-                    <button onclick="app.resetData()" class="text-xs bg-red-950/50 hover:bg-red-900/50 text-red-300 border border-red-800/50 px-3 py-1.5 rounded-lg transition">Verileri Sıfırla</button>
+                    <button type="submit" class="w-full py-3 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-extrabold text-sm shadow-md transition">
+                        Sisteme Giriş Yap
+                    </button>
+                </form>
+                <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500 leading-relaxed">
+                    Varsayılan başlangıç şifresi: <strong class="text-slate-800">1234</strong><br>
+                    Şifre ve personel tanımlamaları <strong class="text-blue-950">Yönetici Paneli</strong> üzerinden yapılır.
                 </div>
             </div>
-        </header>
-
-        <!-- Ana İçerik Alanı -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
-            
-            <!-- Sol Menü / Sekmeler -->
-            <div class="lg:col-span-1 space-y-2 no-print">
-                <button onclick="app.switchTab('dashboard')" id="btn-dashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-cyan-600 text-white shadow-lg shadow-cyan-900/20">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-                    <span>Genel Durum & Özet</span>
+            <div class="md:col-span-5 bg-slate-900 text-white p-6 flex flex-col justify-center space-y-3 border-t md:border-t-0 md:border-l border-slate-800">
+                <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">1. Giriş Rolünü Seçin</div>
+                <button type="button" id="role-card-admin" onclick="selectLoginRole('admin')"
+                        class="w-full text-left p-4 rounded-2xl border-2 border-blue-500 bg-blue-950/80 transition shadow-md">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-extrabold text-white">Yönetici</span>
+                        <span id="role-dot-admin" class="w-3.5 h-3.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20"></span>
+                    </div>
+                    <p class="text-[11px] text-slate-300 mt-1 leading-snug">Tam yetki, maliyet fiyatları ve Yönetici Paneli erişimi.</p>
                 </button>
-                <button onclick="app.switchTab('service')" id="btn-service" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800">
-                    <i data-lucide="wrench" class="w-5 h-5"></i>
-                    <span>Servis & Bakım Raporu</span>
-                </button>
-                <button onclick="app.switchTab('stock')" id="btn-stock" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800">
-                    <i data-lucide="boxes" class="w-5 h-5"></i>
-                    <span>Stok & Parça Takibi</span>
-                </button>
-                <button onclick="app.switchTab('quote')" id="btn-quote" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800">
-                    <i data-lucide="file-text" class="w-5 h-5"></i>
-                    <span>Teklif Oluşturucu</span>
+                <button type="button" id="role-card-employee" onclick="selectLoginRole('employee')"
+                        class="w-full text-left p-4 rounded-2xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-600 transition">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-extrabold text-white">Çalışan</span>
+                        <span id="role-dot-employee" class="w-3.5 h-3.5 rounded-full bg-slate-600"></span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1 leading-snug">Saha servis formu, stok giriş/çıkış ve teklif hazırlama.</p>
                 </button>
             </div>
+        </div>
+    </div>
 
-            <!-- Sağ İçerik Ekranı -->
-            <div class="lg:col-span-3 space-y-6">
-                
-                <!-- 1. DASHBOARD SEKMESİ -->
-                <div id="tab-dashboard" class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                            <div class="flex items-center justify-between text-slate-400 mb-2">
-                                <span class="text-sm font-medium">Toplam Stok Kalemi</span>
-                                <i data-lucide="package" class="w-5 h-5 text-cyan-400"></i>
-                            </div>
-                            <div id="stat-stock-count" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                            <div class="flex items-center justify-between text-slate-400 mb-2">
-                                <span class="text-sm font-medium">Kayıtlı Servis Raporu</span>
-                                <i data-lucide="clipboard-check" class="w-5 h-5 text-emerald-400"></i>
-                            </div>
-                            <div id="stat-service-count" class="text-3xl font-bold text-white">0</div>
-                        </div>
-                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                            <div class="flex items-center justify-between text-slate-400 mb-2">
-                                <span class="text-sm font-medium">Bekleyen Teklifler</span>
-                                <i data-lucide="receipt" class="w-5 h-5 text-amber-400"></i>
-                            </div>
-                            <div id="stat-quote-count" class="text-3xl font-bold text-white">0</div>
+    <!-- DOSYA YÜKLEYİCİLER -->
+    <input type="file" id="hidden-logo-input" accept="image/png, image/jpeg, image/webp" class="hidden">
+    <input type="file" id="hidden-backup-input" accept=".json,application/json" class="hidden">
+
+    <!-- ÖNİZLEME ÇUBUĞU -->
+    <div id="preview-exit-bar" class="hidden sticky top-0 z-40 bg-slate-900 text-white px-4 py-3 shadow-lg flex items-center justify-between max-w-4xl mx-auto rounded-b-xl">
+        <div class="flex items-center gap-2 text-xs sm:text-sm font-semibold">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span>A4 Baskı Önizleme Modu</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition">Yazdır / PDF</button>
+            <button type="button" onclick="setPreviewMode(false)" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition">Düzenlemeye Dön</button>
+        </div>
+    </div>
+
+    <!-- ÜST MENÜ -->
+    <header id="top-navbar" class="screen-only bg-slate-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white text-base shadow">AK</div>
+                    <div>
+                        <h1 class="text-sm sm:text-base font-extrabold tracking-tight leading-tight">ASYA KOMPRESÖR — CENGİZ AKTAN</h1>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
+                            <span>Aktif: <strong id="active-staff-name" class="text-white">Cengiz Aktan</strong></span>
+                            <span id="active-staff-role-badge" class="px-1.5 py-0.2 rounded bg-blue-600 text-white font-extrabold text-[10px]">Yönetici</span>
                         </div>
                     </div>
+                </div>
+                <button type="button" onclick="lockApp()" class="lg:hidden px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-extrabold">Kilitle / Çıkış</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+                <nav class="flex flex-wrap gap-1 bg-slate-800 p-1 rounded-xl">
+                    <button type="button" id="tab-btn-service" onclick="switchTab('service')" class="tab-nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow transition">1. Hizmet Formu</button>
+                    <button type="button" id="tab-btn-stock" onclick="switchTab('stock')" class="tab-nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">2. Stok Takibi</button>
+                    <button type="button" id="tab-btn-quote" onclick="switchTab('quote')" class="tab-nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">3. Fiyat Teklifi</button>
+                    <button type="button" id="tab-btn-admin" onclick="switchTab('admin')" class="tab-nav-btn hidden px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-extrabold text-amber-300 hover:text-white transition">4. Yönetici Paneli</button>
+                </nav>
+                <button type="button" onclick="openReminderModal()" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition flex items-center gap-1">
+                    <span>Bakım Takip</span>
+                    <span id="reminder-badge-count" class="px-1.5 py-0.2 rounded-full bg-slate-900 text-white text-[10px]">0</span>
+                </button>
+                <button type="button" onclick="setPreviewMode(true)" class="px-2.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition">A4 Önizleme</button>
+                <button type="button" onclick="window.print()" class="px-2.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition">Yazdır / PDF</button>
+                <div class="hidden lg:flex items-center gap-1 pl-1 border-l border-slate-700">
+                    <button type="button" onclick="exportJsonBackup()" class="px-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold">Yedek İndir</button>
+                    <button type="button" onclick="document.getElementById('hidden-backup-input').click()" class="px-2 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold">Yükle</button>
+                    <button type="button" onclick="lockApp()" class="px-2.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-extrabold">Kilitle / Çıkış</button>
+                </div>
+            </div>
+        </div>
+    </header>
 
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4">Hızlı İşlem Kılavuzu</h3>
-                        <p class="text-sm text-slate-400 mb-4">
-                            ASYA KOMPRESÖR saha yönetimi sisteminiz günceldir. Sol menüyü kullanarak kompresör bakım raporu oluşturabilir, stoktaki yağ, filtre ve yedek parçaları güncelleyebilir veya müşterilere profesyonel fiyat teklifi çıkarabilirsiniz.
+    <!-- SEKME 1: HİZMET FORMU -->
+    <main id="panel-service" class="tab-panel max-w-5xl mx-auto px-2 sm:px-4 pt-4">
+        <div class="screen-only bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 mb-4 shadow-sm space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
+                <div class="md:col-span-5">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">1. Müşteri / Firma Seç</label>
+                    <div class="flex gap-1.5">
+                        <select id="srv-customer-select" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs sm:text-sm font-bold text-slate-900 outline-none"></select>
+                        <button type="button" onclick="toggleQuickAddBox('srv-new-customer-box')" class="shrink-0 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition">+ Yeni</button>
+                    </div>
+                </div>
+                <div class="md:col-span-7">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">2. Makine Seç</label>
+                    <div class="flex gap-1.5">
+                        <select id="srv-machine-select" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs sm:text-sm font-bold text-blue-950 outline-none"></select>
+                        <button type="button" onclick="prepareNewMachineForCustomer()" class="shrink-0 px-3 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-950 text-xs font-extrabold transition">+ Yeni Makine</button>
+                    </div>
+                </div>
+            </div>
+            <div id="srv-new-customer-box" class="hidden pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end bg-slate-50 p-3 rounded-xl">
+                <div class="sm:col-span-4">
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Yeni Firma Ünvanı *</label>
+                    <input type="text" id="quick-cust-name" placeholder="Örn: Özkan Makina" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold bg-white">
+                </div>
+                <div class="sm:col-span-4">
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Adres</label>
+                    <input type="text" id="quick-cust-address" placeholder="İkitelli OSB" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Yetkili / Tel</label>
+                    <input type="text" id="quick-cust-contact" placeholder="Ahmet Bey" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white">
+                </div>
+                <div class="sm:col-span-2 flex gap-1.5">
+                    <button type="button" onclick="createNewCustomerFromService()" class="w-full py-1.5 px-3 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold">Ekle</button>
+                    <button type="button" onclick="toggleQuickAddBox('srv-new-customer-box')" class="py-1.5 px-2.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-bold">İptal</button>
+                </div>
+            </div>
+            <div id="srv-history-card" class="bg-blue-50/90 border border-blue-200 rounded-xl p-3 text-xs text-slate-800"></div>
+        </div>
+
+        <!-- A4 KAĞIT -->
+        <div class="a4-sheet p-4 sm:p-6 rounded-xl text-slate-900">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-blue-950 pb-3 mb-3 gap-3">
+                <div class="flex items-center gap-3">
+                    <div onclick="triggerLogoUpload()" class="logo-slot cursor-pointer shrink-0" title="Logoyu değiştirmek için tıklayın"></div>
+                    <div>
+                        <div class="text-lg sm:text-xl font-extrabold text-blue-950 tracking-tight leading-none">ASYA KOMPRESÖR</div>
+                        <div class="text-xs font-extrabold text-blue-800 mt-0.5">CENGİZ AKTAN</div>
+                        <p class="text-[10px] text-slate-600 leading-snug mt-1">
+                            İkitelli O.S.B. Aykosan Sit. 4'lü B Blok No: 18/76 Başakşehir / İST.<br>
+                            Tel: <strong>+90 546 505 69 24</strong> &nbsp;|&nbsp; asyakompresor2023@gmail.com
                         </p>
-                        <div class="flex flex-wrap gap-3">
-                            <button onclick="app.switchTab('service')" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition">Yeni Servis Raporu Aç</button>
-                            <button onclick="app.switchTab('stock')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition border border-slate-700">Stok Kontrol Et</button>
-                        </div>
                     </div>
                 </div>
-
-                <!-- 2. SERVİS & BAKIM RAPORU SEKMESİ -->
-                <div id="tab-service" class="hidden space-y-6">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                            <i data-lucide="wrench" class="w-5 h-5 text-cyan-400"></i>
-                            <span>Kompresör Servis ve Bakım Formu</span>
-                        </h3>
-                        <form id="serviceForm" onsubmit="app.saveService(event)" class="space-y-4">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Müşteri / Firma Adı</label>
-                                    <input type="text" id="srv-client" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Kompresör Model / Güç</label>
-                                    <input type="text" id="srv-model" placeholder="Örn: Vidalı 30kW" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Yapılan İşlem / Değişen Parçalar</label>
-                                <textarea id="srv-details" rows="3" placeholder="Örn: Hava filtresi ve seperatör yenilendi, yağ seviyesi tamamlandı." required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"></textarea>
-                            </div>
-                            <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-xl transition text-sm">Servis Raporunu Kaydet</button>
-                        </form>
-                    </div>
-
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h4 class="text-md font-semibold text-white mb-3">Geçmiş Servis Raporları</h4>
-                        <div id="serviceList" class="space-y-3"></div>
+                <div class="text-left sm:text-right w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
+                    <div class="inline-block bg-blue-950 text-white px-3 py-1 rounded text-xs sm:text-sm font-extrabold tracking-wide">MÜŞTERİ HİZMET FORMU</div>
+                    <div class="mt-1.5 flex sm:justify-end items-center gap-1.5 text-xs">
+                        <span class="font-bold text-slate-600">FORM NO:</span>
+                        <input type="text" id="srv-form-no" value="0048" class="w-16 font-extrabold text-rose-700 border-b border-slate-400 text-center outline-none">
                     </div>
                 </div>
-
-                <!-- 3. STOK TAKİBİ SEKMESİ -->
-                <div id="tab-stock" class="hidden space-y-6">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                            <i data-lucide="boxes" class="w-5 h-5 text-cyan-400"></i>
-                            <span>Yeni Parça / Ürün Ekle</span>
-                        </h3>
-                        <form id="stockForm" onsubmit="app.saveStock(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Parça Adı</label>
-                                <input type="text" id="stk-name" placeholder="Örn: 10 Mikron Filtre" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Adet</label>
-                                <input type="number" id="stk-qty" placeholder="0" min="0" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-                            </div>
-                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-xl transition text-sm">Stok Ekle</button>
-                        </form>
-                    </div>
-
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h4 class="text-md font-semibold text-white mb-3">Mevcut Stok Durumu</h4>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm text-slate-300">
-                                <thead class="border-b border-slate-800 text-xs uppercase text-slate-400">
-                                    <tr>
-                                        <th class="py-3 px-4">Parça Adı</th>
-                                        <th class="py-3 px-4">Miktar</th>
-                                        <th class="py-3 px-4 text-right">İşlem</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="stockTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 4. TEKLİF OLUŞTURUCU SEKMESİ -->
-                <div id="tab-quote" class="hidden space-y-6">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                            <i data-lucide="file-text" class="w-5 h-5 text-cyan-400"></i>
-                            <span>Fiyat Teklifi Düzenle</span>
-                        </h3>
-                        <form id="quoteForm" onsubmit="app.saveQuote(event)" class="space-y-4">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Müşteri Adı</label>
-                                    <input type="text" id="qte-client" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Toplam Tutar (TL)</label>
-                                    <input type="number" id="qte-amount" step="0.01" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-                                </div>
-                            </div>
-                            <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-xl transition text-sm">Teklifi Kaydet ve Listele</button>
-                        </form>
-                    </div>
-
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                        <h4 class="text-md font-semibold text-white mb-3">Kayıtlı Teklifler</h4>
-                        <div id="quoteList" class="space-y-3"></div>
-                    </div>
-                </div>
-
             </div>
-        </main>
+
+            <!-- Müşteri ve Makine Tablosu -->
+            <div class="grid grid-cols-12 border border-slate-400 text-xs mb-2.5">
+                <div class="col-span-12 md:col-span-7 border-b md:border-b-0 md:border-r border-slate-400 divide-y divide-slate-300">
+                    <div class="flex items-center px-2 py-1.5">
+                        <span class="w-28 font-bold text-slate-700 shrink-0">Müşteri Ünvanı :</span>
+                        <input type="text" id="srv-cust-name" class="w-full font-extrabold text-slate-950 outline-none bg-transparent">
+                    </div>
+                    <div class="flex items-center px-2 py-1.5">
+                        <span class="w-28 font-bold text-slate-700 shrink-0">Adres :</span>
+                        <input type="text" id="srv-cust-address" class="w-full text-slate-800 outline-none bg-transparent">
+                    </div>
+                    <div class="grid grid-cols-2 divide-x divide-slate-300">
+                        <div class="flex items-center px-2 py-1.5">
+                            <span class="w-24 font-bold text-slate-700 shrink-0">Vergi D./No :</span>
+                            <input type="text" id="srv-cust-tax" class="w-full text-slate-800 outline-none bg-transparent">
+                        </div>
+                        <div class="flex items-center px-2 py-1.5">
+                            <span class="w-16 font-bold text-slate-700 shrink-0">Telefon :</span>
+                            <input type="text" id="srv-cust-tel" class="w-full text-slate-800 outline-none bg-transparent">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 divide-x divide-slate-300">
+                        <div class="flex items-center px-2 py-1.5">
+                            <span class="w-20 font-bold text-slate-700 shrink-0">Yetkili Kişi :</span>
+                            <input type="text" id="srv-cust-contact" class="w-full text-slate-900 font-semibold outline-none bg-transparent">
+                        </div>
+                        <div class="flex items-center px-2 py-1.5">
+                            <span class="w-16 font-bold text-slate-700 shrink-0">Cep Tel :</span>
+                            <input type="text" id="srv-cust-phone" class="w-full text-slate-900 font-semibold outline-none bg-transparent">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-span-12 md:col-span-5 divide-y divide-slate-300 bg-slate-50/50">
+                    <div class="flex items-center px-2 py-1.5">
+                        <span class="w-32 font-bold text-slate-700 shrink-0">Marka/Model :</span>
+                        <input type="text" id="srv-mach-model" class="w-full font-extrabold text-blue-950 outline-none bg-transparent">
+                    </div>
+                    <div class="flex items-center px-2 py-1.5">
+                        <span class="w-32 font-bold text-slate-700 shrink-0">Seri No :</span>
+                        <input type="text" id="srv-mach-serial" class="w-full font-bold text-slate-900 outline-none bg-transparent">
+                    </div>
+                    <div class="flex items-center px-2 py-1.5">
+                        <span class="w-32 font-bold text-slate-700 shrink-0">Tarih :</span>
+                        <input type="text" id="srv-date" class="w-full font-bold text-slate-900 outline-none bg-transparent">
+                    </div>
+                    <div class="flex items-center px-2 py-1.5">
+                        <span class="w-32 font-bold text-slate-700 shrink-0">Çalışma Saati :</span>
+                        <input type="number" id="srv-hours" class="w-full font-extrabold text-blue-950 outline-none bg-transparent">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hizmet Türleri -->
+            <div class="border border-slate-400 px-2.5 py-1.5 mb-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs bg-slate-50">
+                <span class="font-extrabold text-slate-800">Hizmet Türü :</span>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" class="srv-type-chk rounded text-blue-900" value="01 - Fatura" checked> <span>01 - Fatura</span></label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" class="srv-type-chk rounded text-blue-900" value="02 - İlk Çalıştırma"> <span>02 - İlk Çalıştırma</span></label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" class="srv-type-chk rounded text-blue-900" value="03 - Garanti"> <span>03 - Garanti</span></label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" class="srv-type-chk rounded text-blue-900" value="04 - Yedek Parça"> <span>04 - Yedek Parça</span></label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" class="srv-type-chk rounded text-blue-900" value="05 - Diğer"> <span>05 - Diğer</span></label>
+            </div>
+
+            <!-- Yapılan İşlem & Malzemeler -->
+            <div class="grid grid-cols-12 border border-slate-400 mb-2.5">
+                <div class="col-span-12 md:col-span-6 border-b md:border-b-0 md:border-r border-slate-400 flex flex-col justify-between">
+                    <div class="p-2.5 flex-1 flex flex-col">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-extrabold text-blue-950 uppercase">Yapılan İşlem</span>
+                            <button type="button" onclick="insertStandardWorkNote()" class="screen-only text-[11px] font-bold text-blue-700 hover:underline">+ Standart Not</button>
+                        </div>
+                        <textarea id="srv-work-done" rows="10" class="w-full flex-1 text-xs leading-relaxed text-slate-900 outline-none bg-transparent resize-none" placeholder="Yapılan bakım ve onarımlar..."></textarea>
+                    </div>
+                    <div class="border-t border-slate-400 p-2.5 bg-slate-50/80">
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <span class="text-[11px] font-extrabold text-blue-950">BİR SONRAKİ BAKIM</span>
+                            <button type="button" onclick="openReminderModal()" class="screen-only text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 transition">Hatırlatıcı Kur</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 mb-2 bg-amber-50 border border-amber-200 p-1.5 rounded-lg text-[10px]">
+                            <div><label class="block font-bold text-slate-600">Periyod</label><input type="number" id="calc-period" value="4000" class="w-full mt-0.5 bg-white border border-slate-300 rounded px-1.5 py-1 font-extrabold text-slate-900"></div>
+                            <div><label class="block font-bold text-slate-600">Gün/Hafta</label><input type="number" id="calc-days" value="6" class="w-full mt-0.5 bg-white border border-slate-300 rounded px-1.5 py-1 font-extrabold text-slate-900"></div>
+                            <div><label class="block font-bold text-slate-600">Saat/Gün</label><input type="number" id="calc-daily-hours" value="8" class="w-full mt-0.5 bg-white border border-slate-300 rounded px-1.5 py-1 font-extrabold text-slate-900"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex items-center gap-1"><span class="font-bold text-slate-700">Tarih:</span><input type="text" id="srv-next-date" class="w-full font-extrabold text-blue-950 border-b border-slate-400 outline-none bg-transparent"></div>
+                            <div class="flex items-center gap-1"><span class="font-bold text-slate-700">Saat:</span><input type="text" id="srv-next-hours" class="w-full font-extrabold text-blue-950 border-b border-slate-400 outline-none bg-transparent"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 md:col-span-6 flex flex-col">
+                    <div class="screen-only px-2.5 py-2 bg-amber-50 border-b border-slate-300 flex items-center justify-between gap-2">
+                        <label for="toggle-srv-price" class="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="toggle-srv-price" class="w-4 h-4 rounded text-blue-900 cursor-pointer">
+                            <span class="text-xs font-extrabold text-slate-900">Fiyat Göster (Nakit/Peşin)</span>
+                        </label>
+                        <span id="srv-price-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Kapalı</span>
+                    </div>
+                    <table class="w-full text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-blue-950 text-white">
+                                <th class="py-1.5 px-1.5 text-center w-7 border-r border-blue-800">#</th>
+                                <th class="py-1.5 px-2 text-left border-r border-blue-800">MALZEME ADI</th>
+                                <th class="py-1.5 px-1.5 text-center w-20">ADET</th>
+                                <th class="srv-price-col hidden py-1.5 px-1.5 text-right w-20 border-l border-blue-800">B. FİYATI</th>
+                                <th class="srv-price-col hidden py-1.5 px-2 text-right w-24 border-l border-blue-800">TOPLAM</th>
+                            </tr>
+                        </thead>
+                        <tbody id="srv-parts-tbody" class="divide-y divide-slate-300"></tbody>
+                        <tfoot id="srv-price-tfoot" class="hidden bg-blue-50 border-t-2 border-blue-950">
+                            <tr>
+                                <td colspan="4" class="py-1.5 px-2 text-right font-extrabold text-blue-950 text-xs">GENEL TOPLAM :</td>
+                                <td id="srv-grand-total" class="py-1.5 px-2 text-right font-extrabold text-blue-950 text-xs whitespace-nowrap">0,00 ₺</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="screen-only p-2 bg-slate-50 border-t border-slate-300 flex items-center justify-between mt-auto">
+                        <span class="text-[10px] text-slate-500">Adet girilenler stoktan düşer.</span>
+                        <button type="button" onclick="addBlankServicePartRow()" class="text-xs font-bold text-blue-900 bg-blue-100 hover:bg-blue-200 px-2.5 py-1 rounded transition">+ Satır Ekle</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alt İmza -->
+            <div class="grid grid-cols-12 border border-slate-400 text-xs">
+                <div class="col-span-12 sm:col-span-4 p-2.5 border-b sm:border-b-0 sm:border-r border-slate-400 text-[10px] text-slate-600 leading-relaxed">
+                    <p><strong>İşbu Servis Formunun;</strong> çalışma saatlerini doğruladığımı ve faturayı ödemeyi taahhüt ederim.</p>
+                </div>
+                <div class="col-span-6 sm:col-span-4 p-2 border-r border-slate-400 flex flex-col items-center">
+                    <div class="w-full flex items-center justify-between mb-1">
+                        <span class="font-extrabold text-slate-800 text-[11px]">Müşteri Vekili</span>
+                        <button type="button" onclick="clearSignaturePad('sig-srv-cust')" class="screen-only text-[10px] text-rose-600 font-bold hover:underline">Temizle</button>
+                    </div>
+                    <canvas id="sig-srv-cust" width="220" height="72" class="sig-canvas w-full h-20 border border-dashed border-slate-300 rounded bg-slate-50/50"></canvas>
+                </div>
+                <div class="col-span-6 sm:col-span-4 p-2 flex flex-col items-center">
+                    <div class="w-full flex items-center justify-between mb-1">
+                        <span class="font-extrabold text-blue-950 text-[11px]">ASYA KOMPRESÖR</span>
+                        <button type="button" onclick="clearSignaturePad('sig-srv-tech')" class="screen-only text-[10px] text-rose-600 font-bold hover:underline">Temizle</button>
+                    </div>
+                    <canvas id="sig-srv-tech" width="220" height="72" class="sig-canvas w-full h-20 border border-dashed border-slate-300 rounded bg-slate-50/50"></canvas>
+                    <span id="srv-tech-signer-name" class="text-[10px] font-bold text-slate-600 mt-0.5">Cengiz Aktan</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="screen-only mt-4 flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+            <button type="button" onclick="resetToBlankServiceForm()" class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-900 text-xs font-extrabold transition">Yeni Boş Form</button>
+            <button type="button" onclick="saveServiceRecordAndDeductStock()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold shadow transition">Formu Kaydet ve Stoktan Düş</button>
+        </div>
+    </main>
+
+    <!-- SEKME 2: STOK TAKİBİ -->
+    <section id="panel-stock" class="tab-panel hidden max-w-6xl mx-auto px-2 sm:px-4 pt-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 mb-4 shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Depo Stok &amp; Maliyet Takibi</h2>
+                    <p id="stock-subtitle-info" class="text-xs text-slate-500">Servis formu kaydedildiğinde kullanılan parçalar stoktan otomatik düşer.</p>
+                </div>
+                <button type="button" onclick="toggleQuickAddBox('new-stock-form')" class="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-extrabold shadow-sm transition">+ Yeni Parça</button>
+            </div>
+            <div id="new-stock-form" class="hidden pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3 rounded-xl">
+                <div class="sm:col-span-2"><label class="block text-[11px] font-bold text-slate-600 mb-1">Kod</label><input type="text" id="stk-new-code" placeholder="KMP-09" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"></div>
+                <div class="sm:col-span-3"><label class="block text-[11px] font-bold text-slate-600 mb-1">Malzeme Adı *</label><input type="text" id="stk-new-name" placeholder="EMİŞ VALFİ" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs uppercase font-bold bg-white"></div>
+                <div class="sm:col-span-3"><label class="block text-[11px] font-bold text-slate-600 mb-1">Model</label><input type="text" id="stk-new-model" placeholder="Vidalı" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"></div>
+                <div id="stk-new-cost-wrapper" class="sm:col-span-2"><label class="block text-[11px] font-bold text-slate-600 mb-1">Geliş (₺)</label><input type="number" id="stk-new-cost" value="0" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold bg-white"></div>
+                <div class="sm:col-span-1"><label class="block text-[11px] font-bold text-slate-600 mb-1">Giriş</label><input type="number" id="stk-new-qty" value="5" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold bg-white"></div>
+                <div class="sm:col-span-1"><button type="button" onclick="addNewStockItem()" class="w-full py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Ekle</button></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900 text-white text-[11px] uppercase tracking-wider">
+                            <th class="py-3 px-3">Parça Kodu</th>
+                            <th class="py-3 px-3">Malzeme Adı</th>
+                            <th class="py-3 px-3">Model</th>
+                            <th id="stk-th-cost" class="py-3 px-3 text-right">Geliş (₺)</th>
+                            <th class="py-3 px-3 text-center">Giriş</th>
+                            <th class="py-3 px-3 text-center">Çıkış</th>
+                            <th class="py-3 px-3 text-center">Kalan</th>
+                            <th class="py-3 px-3 text-center">Kritik</th>
+                            <th class="py-3 px-3 text-center">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-tbody" class="divide-y divide-slate-200 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEKME 3: FİYAT TEKLİFİ -->
+    <section id="panel-quote" class="tab-panel hidden max-w-5xl mx-auto px-2 sm:px-4 pt-4">
+        <div class="screen-only bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 mb-4 shadow-sm space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
+                <div class="md:col-span-6">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Teklif Verilecek Müşteri</label>
+                    <div class="flex gap-1.5">
+                        <select id="qt-customer-select" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs sm:text-sm font-bold text-slate-900 outline-none"></select>
+                        <button type="button" onclick="toggleQuickAddBox('qt-new-customer-box')" class="shrink-0 px-3 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-extrabold transition">+ Yeni</button>
+                    </div>
+                </div>
+                <div class="md:col-span-6 grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Para Birimi</label>
+                        <select id="qt-currency" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs font-extrabold text-slate-900 outline-none">
+                            <option value="TRY" selected>₺ Türk Lirası</option>
+                            <option value="EUR">€ Euro</option>
+                            <option value="USD">$ ABD Doları</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">KDV Oranı</label>
+                        <select id="qt-kdv-select" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs font-extrabold text-blue-950 outline-none">
+                            <option value="20" selected>%20 KDV</option>
+                            <option value="10">%10 KDV</option>
+                            <option value="1">%1 KDV</option>
+                            <option value="0">%0 (Hariç)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="qt-new-customer-box" class="hidden pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end bg-blue-50/70 p-3 rounded-xl">
+                <div class="sm:col-span-4"><label class="block text-[11px] font-bold text-slate-700 mb-1">Müşteri Adı *</label><input type="text" id="qt-new-cust-name" placeholder="Karadeniz Metal" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold bg-white"></div>
+                <div class="sm:col-span-4"><label class="block text-[11px] font-bold text-slate-700 mb-1">Adres</label><input type="text" id="qt-new-cust-address" placeholder="Başakşehir" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"></div>
+                <div class="sm:col-span-2"><label class="block text-[11px] font-bold text-slate-700 mb-1">Yetkili/Tel</label><input type="text" id="qt-new-cust-contact" placeholder="Murat Bey" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"></div>
+                <div class="sm:col-span-2 flex gap-1.5"><button type="button" onclick="createNewCustomerFromQuote()" class="w-full py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Kaydet</button><button type="button" onclick="toggleQuickAddBox('qt-new-customer-box')" class="py-1.5 px-2.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-bold">İptal</button></div>
+            </div>
+            <div class="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-700">Stoktan Çek:</span>
+                    <select id="qt-stock-picker" class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 font-semibold text-slate-800 outline-none"></select>
+                    <button type="button" onclick="addSelectedStockToQuote()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold">+ Ekle</button>
+                </div>
+                <label class="inline-flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer font-semibold text-slate-800">
+                    <input type="checkbox" id="chk-qt-specs" class="rounded text-blue-900 w-4 h-4">
+                    <span>Teknik Özellik Tablosunu Göster</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- A4 TEKLİF KAĞIDI -->
+        <div class="a4-sheet p-5 sm:p-8 rounded-xl text-slate-900">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-blue-950 pb-4 mb-5 gap-3">
+                <div class="flex items-center gap-3.5">
+                    <div onclick="triggerLogoUpload()" class="logo-slot cursor-pointer shrink-0" title="Logoyu değiştirmek için tıklayın"></div>
+                    <div>
+                        <div class="text-xl font-extrabold text-blue-950 tracking-tight leading-none">ASYA KOMPRESÖR</div>
+                        <div class="text-xs font-extrabold text-blue-800 mt-1">CENGİZ AKTAN — SATIŞ, SERVİS &amp; YEDEK PARÇA</div>
+                        <p class="text-[11px] text-slate-600 leading-snug mt-1">
+                            İkitelli O.S.B. Aykosan Sit. 4'lü B Blok No: 18/76 Başakşehir / İST.<br>
+                            Tel: <strong>+90 546 505 69 24</strong> &nbsp;|&nbsp; asyakompresor2023@gmail.com
+                        </p>
+                    </div>
+                </div>
+                <div class="text-left sm:text-right w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
+                    <div class="inline-block bg-blue-950 text-white px-3.5 py-1 rounded text-sm font-extrabold tracking-wide">FİYAT TEKLİF FORMU</div>
+                    <div class="mt-2 space-y-0.5 text-xs">
+                        <div class="flex items-center sm:justify-end gap-1">
+                            <span class="font-bold text-slate-600">Teklif No:</span>
+                            <input type="text" id="qt-no" value="TEK-2026-001" class="w-28 font-extrabold text-slate-900 text-right outline-none">
+                            <button type="button" onclick="incrementQuoteNumber()" class="screen-only text-[10px] px-1.5 py-0.5 rounded bg-slate-200 font-bold">+1</button>
+                        </div>
+                        <div><span class="font-bold text-slate-600">Tarih:</span> <input type="text" id="qt-date" class="w-24 font-bold text-slate-900 text-right outline-none"></div>
+                        <div><span class="font-bold text-slate-600">Geçerlilik:</span> <input type="text" id="qt-valid" value="7 Gün" class="w-20 font-bold text-rose-700 text-right outline-none"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border border-slate-300 rounded-lg p-3.5 mb-5 bg-slate-50/60 text-xs space-y-1.5">
+                <div class="flex items-center gap-2"><span class="w-24 font-extrabold text-blue-950 uppercase">SAYIN :</span><input type="text" id="qt-cust-name" class="w-full font-extrabold text-sm text-slate-950 outline-none bg-transparent"></div>
+                <div class="flex items-center gap-2"><span class="w-24 font-bold text-slate-600">Adres :</span><input type="text" id="qt-cust-address" class="w-full text-slate-800 outline-none bg-transparent"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div class="flex items-center gap-2"><span class="w-24 font-bold text-slate-600">Yetkili / Tel :</span><input type="text" id="qt-cust-contact" class="w-full font-semibold text-slate-900 outline-none bg-transparent"></div>
+                    <div class="flex items-center gap-2"><span class="w-20 font-bold text-slate-600">Konu :</span><input type="text" id="qt-subject" value="Periyodik Bakım ve Yedek Parça Teklifi" class="w-full font-semibold text-slate-900 outline-none bg-transparent"></div>
+                </div>
+            </div>
+
+            <div id="qt-specs-box" class="hidden border border-blue-200 rounded-lg p-3 mb-5 bg-blue-50/40 text-xs">
+                <div class="font-extrabold text-blue-950 mb-2">TEKNİK ÖZELLİKLER</div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div class="bg-white p-2 rounded border border-slate-200"><span class="block text-[10px] font-bold text-slate-500">Motor</span><input type="text" value="30 kW / 40 HP" class="w-full font-extrabold text-slate-900 mt-0.5 outline-none"></div>
+                    <div class="bg-white p-2 rounded border border-slate-200"><span class="block text-[10px] font-bold text-slate-500">Basınç</span><input type="text" value="7.5 - 10 Bar" class="w-full font-extrabold text-slate-900 mt-0.5 outline-none"></div>
+                    <div class="bg-white p-2 rounded border border-slate-200"><span class="block text-[10px] font-bold text-slate-500">Debi</span><input type="text" value="5.2 m³/dk" class="w-full font-extrabold text-slate-900 mt-0.5 outline-none"></div>
+                    <div class="bg-white p-2 rounded border border-slate-200"><span class="block text-[10px] font-bold text-slate-500">Tip</span><input type="text" value="IE3 Verimli" class="w-full font-extrabold text-slate-900 mt-0.5 outline-none"></div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <table class="w-full text-xs border border-slate-400 border-collapse">
+                    <thead>
+                        <tr class="bg-blue-950 text-white">
+                            <th class="py-2 px-2 text-center w-10 border-r border-blue-800">SIRA</th>
+                            <th class="py-2 px-3 text-left border-r border-blue-800">AÇIKLAMA / MALZEME VE HİZMET TANIMI</th>
+                            <th class="py-2 px-2 text-center w-16 border-r border-blue-800">ADET</th>
+                            <th class="py-2 px-3 text-right w-28 border-r border-blue-800">BİRİM FİYAT</th>
+                            <th class="py-2 px-3 text-right w-28">TOPLAM</th>
+                            <th class="screen-only py-2 px-1 w-7"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="qt-items-tbody" class="divide-y divide-slate-300"></tbody>
+                </table>
+                <div class="screen-only mt-2 flex justify-end">
+                    <button type="button" onclick="addBlankQuoteRow()" class="text-xs font-bold text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-lg transition">+ Yeni Satır Ekle</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start mb-5">
+                <div class="sm:col-span-7 border border-slate-300 rounded-lg p-3 text-xs space-y-2 bg-slate-50/50">
+                    <div class="font-extrabold text-blue-950 border-b border-slate-200 pb-1">TESLİMAT VE ÖDEME</div>
+                    <div class="flex items-center gap-2"><span class="w-24 font-bold text-slate-600 shrink-0">Teslim :</span><select id="qt-delivery" class="w-full font-semibold text-slate-900 bg-transparent outline-none"><option>Hemen Teslim / Montaj</option><option>2-3 İş Günü</option></select></div>
+                    <div class="flex items-center gap-2"><span class="w-24 font-bold text-slate-600 shrink-0">Ödeme :</span><select id="qt-payment" class="w-full font-semibold text-slate-900 bg-transparent outline-none"><option>Peşin / İş Bitimi Nakit veya Havale</option><option>15 Gün Vadeli</option></select></div>
+                    <div id="qt-fx-note-box" class="hidden pt-1"><input type="text" id="qt-fx-note" value="* TCMB Döviz Satış kuru esas alınır." class="w-full text-[11px] font-semibold text-amber-900 bg-transparent outline-none"></div>
+                </div>
+                <div class="sm:col-span-5 space-y-1.5 text-xs">
+                    <div class="flex justify-between px-2.5 py-1.5 border-b border-slate-200"><span class="font-semibold text-slate-600">Ara Toplam :</span><span id="qt-subtotal" class="font-bold text-slate-900">0,00 ₺</span></div>
+                    <div class="flex justify-between px-2.5 py-1.5 border-b border-slate-200"><span id="qt-kdv-label" class="font-semibold text-slate-600">KDV (%20) :</span><span id="qt-kdv-amount" class="font-bold text-slate-900">0,00 ₺</span></div>
+                    <div class="flex justify-between px-3 py-2.5 bg-blue-950 text-white rounded-lg text-sm"><span class="font-extrabold">GENEL TOPLAM :</span><span id="qt-grandtotal" class="font-extrabold">0,00 ₺</span></div>
+                </div>
+            </div>
+
+            <div id="qt-notes-container" class="border border-slate-300 rounded-lg p-3 mb-5 bg-slate-50/50 text-xs">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+                    <span class="font-extrabold text-blue-950 uppercase">NOT / AÇIKLAMA</span>
+                    <button type="button" onclick="insertQuoteStandardNote()" class="screen-only text-[11px] font-bold text-blue-800 hover:underline">+ Garanti Notu Ekle</button>
+                </div>
+                <textarea id="qt-notes-input" rows="3" placeholder="Garanti şartları veya montaj detayları..." class="screen-only w-full bg-white border border-slate-200 rounded-md p-2 text-xs text-slate-900 outline-none resize-y"></textarea>
+                <div id="qt-notes-print-view" class="hidden whitespace-pre-line text-xs text-slate-800 leading-relaxed"></div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-300 flex flex-col items-center justify-center">
+                <div class="w-full max-w-xs border border-slate-300 rounded-xl p-3 text-center bg-slate-50/40">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[11px] font-extrabold text-blue-950 uppercase mx-auto">ASYA KOMPRESÖR — İMZA</span>
+                        <button type="button" onclick="clearSignaturePad('sig-qt-company')" class="screen-only text-[10px] text-rose-600 font-bold hover:underline">Temizle</button>
+                    </div>
+                    <canvas id="sig-qt-company" width="260" height="80" class="sig-canvas w-full h-20 border border-dashed border-slate-300 rounded bg-white"></canvas>
+                    <div class="text-xs font-extrabold text-slate-900 mt-1">Cengiz AKTAN</div>
+                    <div class="text-[10px] text-slate-500">Satış &amp; Servis Yetkilisi</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEKME 4: YÖNETİCİ PANELİ -->
+    <section id="panel-admin" class="tab-panel hidden max-w-5xl mx-auto px-2 sm:px-4 pt-4 space-y-5">
+        <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <span class="inline-block px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase tracking-wider mb-1">Yönetici Yetki Alanı</span>
+                <h2 class="text-lg sm:text-xl font-extrabold">Personel, Şifre ve Sistem Yönetimi</h2>
+                <p class="text-xs text-slate-300 mt-0.5">Personel tanımlayabilir, şifreleri değiştirebilir ve maliyet görünürlüğünü kontrol edebilirsiniz.</p>
+            </div>
+            <button type="button" onclick="exportJsonBackup()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold">Tam Yedek İndir (.json)</button>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+            <h3 class="text-sm font-extrabold text-slate-900 mb-3">Çalışan Görünürlük İzinleri</h3>
+            <label class="flex items-center justify-between gap-4 p-3.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                <div>
+                    <div class="text-xs sm:text-sm font-extrabold text-slate-900">Çalışanlar "Bize Geliş Fiyatlarını" Görebilsin mi?</div>
+                    <div class="text-xs text-slate-500 mt-0.5">Kapalı olduğunda maliyetler sadece Yönetici girişinde görünür.</div>
+                </div>
+                <input type="checkbox" id="admin-toggle-employee-cost" class="w-5 h-5 rounded text-blue-900 cursor-pointer shrink-0">
+            </label>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3">
+            <h3 class="text-sm font-extrabold text-slate-900">+ Yeni Personel Ekle</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div class="sm:col-span-4"><label class="block text-[11px] font-bold text-slate-600 mb-1">Ad Soyad *</label><input type="text" id="adm-new-name" placeholder="Mehmet Aktan" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold outline-none"></div>
+                <div class="sm:col-span-3">
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Rol</label>
+                    <select id="adm-new-role" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 text-xs font-extrabold text-slate-900 outline-none"><option value="employee" selected>Çalışan</option><option value="admin">Yönetici</option></select>
+                </div>
+                <div class="sm:col-span-3"><label class="block text-[11px] font-bold text-slate-600 mb-1">Şifre *</label><input type="text" id="adm-new-pin" value="1234" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-extrabold outline-none"></div>
+                <div class="sm:col-span-2"><button type="button" onclick="adminAddStaffUser()" class="w-full py-2 px-3 rounded-xl bg-blue-950 hover:bg-blue-900 text-white text-xs font-extrabold shadow-sm">Personel Ekle</button></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between"><h3 class="text-sm font-extrabold text-slate-900">Kayıtlı Personeller</h3></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900 text-white text-[11px] uppercase tracking-wider">
+                            <th class="py-3 px-4">Ad Soyad</th>
+                            <th class="py-3 px-4">Rol</th>
+                            <th class="py-3 px-4">Şifre</th>
+                            <th class="py-3 px-4 text-right">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-staff-tbody" class="divide-y divide-slate-200 text-xs sm:text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOAST & MODAL -->
+    <div id="toast-box" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold border border-slate-700"></div>
+
+    <div id="reminder-modal" class="screen-only fixed inset-0 z-40 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm sm:text-base font-extrabold">Bakım Hatırlatma &amp; Bildirim Merkezi</h3>
+                    <p class="text-[11px] text-slate-300">SMS, E-posta veya Takvim Alarmı</p>
+                </div>
+                <button type="button" onclick="closeReminderModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm">×</button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-4 text-xs">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div><label class="block text-[11px] font-bold text-slate-600 mb-1">E-Posta</label><input type="email" id="notify-email-input" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold"></div>
+                    <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Telefon (SMS/WA)</label><input type="text" id="notify-phone-input" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold"></div>
+                </div>
+                <div id="active-reminder-box" class="bg-amber-50 border border-amber-300 rounded-xl p-3 space-y-2.5"></div>
+                <div>
+                    <div class="font-extrabold text-slate-800 uppercase text-[11px] mb-2">Tüm Makinelerin Bakım Takvimi</div>
+                    <div id="all-reminders-list" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        class CompressorApp {
-            constructor() {
-                this.state = {
-                    services: JSON.parse(localStorage.getItem('asya_services')) || [],
-                    stock: JSON.parse(localStorage.getItem('asya_stock')) || [
-                        { id: 1, name: 'Vidalı Kompresör Yağı (20L)', qty: 12 },
-                        { id: 2, name: 'Hava Filtresi', qty: 25 },
-                        { id: 3, name: 'Yağ Filtresi', qty: 18 }
-                    ],
-                    quotes: JSON.parse(localStorage.getItem('asya_quotes')) || []
-                };
-                this.init();
-            }
+        /* SİSTEM SCRİPT BLOKU */
+        const STAFF_STORAGE_KEY = 'asya_kompresor_staff_users_v2';
+        const SESSION_USER_KEY = 'asya_kompresor_active_user_id_v2';
+        const SETTINGS_STORAGE_KEY = 'asya_kompresor_admin_settings_v1';
 
-            init() {
-                this.render();
-                document.getElementById('currentTime').innerText = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
-            }
+        const DEFAULT_STAFF_USERS = [
+            { id: 'staff-1', name: 'Cengiz Aktan', role: 'admin', pin: '1234' },
+            { id: 'staff-2', name: 'Arda Aktan', role: 'employee', pin: '1234' }
+        ];
 
-            switchTab(tabId) {
-                ['dashboard', 'service', 'stock', 'quote'].forEach(t => {
-                    document.getElementById(`tab-${t}`).classList.add('hidden');
-                    const btn = document.getElementById(`btn-${t}`);
-                    btn.classList.remove('bg-cyan-600', 'text-white', 'shadow-lg', 'shadow-cyan-900/20');
-                    btn.classList.add('bg-slate-900', 'text-slate-300', 'border', 'border-slate-800');
-                });
-                document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-                const activeBtn = document.getElementById(`btn-${tabId}`);
-                activeBtn.classList.remove('bg-slate-900', 'text-slate-300', 'border', 'border-slate-800');
-                activeBtn.classList.add('bg-cyan-600', 'text-white', 'shadow-lg', 'shadow-cyan-900/20');
-            }
+        let selectedLoginRole = 'admin';
 
-            saveData() {
-                localStorage.setItem('asya_services', JSON.stringify(this.state.services));
-                localStorage.setItem('asya_stock', JSON.stringify(this.state.stock));
-                localStorage.setItem('asya_quotes', JSON.stringify(this.state.quotes));
-                this.render();
-            }
+        function getAdminSettings() {
+            try {
+                const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+                if (raw) return JSON.parse(raw);
+            } catch (e) {}
+            return { allowEmployeeSeeCost: false };
+        }
 
-            saveService(e) {
-                e.preventDefault();
-                const client = document.getElementById('srv-client').value;
-                const model = document.getElementById('srv-model').value;
-                const details = document.getElementById('srv-details').value;
+        function saveAdminSettings(settings) {
+            try { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)); } catch (e) {}
+        }
 
-                this.state.services.unshift({
-                    id: Date.now(),
-                    date: new Date().toLocaleDateString('tr-TR'),
-                    client, model, details
-                });
-
-                document.getElementById('serviceForm').reset();
-                this.saveData();
-            }
-
-            saveStock(e) {
-                e.preventDefault();
-                const name = document.getElementById('stk-name').value;
-                const qty = parseInt(document.getElementById('stk-qty').value);
-
-                this.state.stock.push({ id: Date.now(), name, qty });
-                document.getElementById('stockForm').reset();
-                this.saveData();
-            }
-
-            deleteStock(id) {
-                this.state.stock = this.state.stock.filter(s => s.id !== id);
-                this.saveData();
-            }
-
-            saveQuote(e) {
-                e.preventDefault();
-                const client = document.getElementById('qte-client').value;
-                const amount = parseFloat(document.getElementById('qte-amount').value);
-
-                this.state.quotes.unshift({
-                    id: Date.now(),
-                    date: new Date().toLocaleDateString('tr-TR'),
-                    client, amount
-                });
-
-                document.getElementById('quoteForm').reset();
-                this.saveData();
-            }
-
-            resetData() {
-                if (confirm('Tüm yerel veriler sıfırlanacak. Emin misiniz?')) {
-                    localStorage.clear();
-                    location.reload();
+        function getStaffUsers() {
+            try {
+                const raw = localStorage.getItem(STAFF_STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
                 }
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(DEFAULT_STAFF_USERS));
+        }
+
+        function saveStaffUsers(list) {
+            try { localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+        }
+
+        function getActiveUser() {
+            const activeId = sessionStorage.getItem(SESSION_USER_KEY);
+            if (!activeId) return null;
+            return getStaffUsers().find(u => u.id === activeId) || null;
+        }
+
+        function canCurrentUserSeeCost() {
+            const user = getActiveUser();
+            if (!user) return false;
+            if (user.role === 'admin') return true;
+            return Boolean(getAdminSettings().allowEmployeeSeeCost);
+        }
+
+        function selectLoginRole(role) {
+            selectedLoginRole = role;
+            const adminCard = document.getElementById('role-card-admin');
+            const empCard = document.getElementById('role-card-employee');
+            const adminDot = document.getElementById('role-dot-admin');
+            const empDot = document.getElementById('role-dot-employee');
+            const pill = document.getElementById('login-selected-role-pill');
+
+            if (role === 'admin') {
+                adminCard.className = 'w-full text-left p-4 rounded-2xl border-2 border-blue-500 bg-blue-950/80 transition shadow-md';
+                adminDot.className = 'w-3.5 h-3.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20';
+                empCard.className = 'w-full text-left p-4 rounded-2xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-600 transition';
+                empDot.className = 'w-3.5 h-3.5 rounded-full bg-slate-600';
+                pill.textContent = 'Yönetici';
+                pill.className = 'text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950';
+            } else {
+                empCard.className = 'w-full text-left p-4 rounded-2xl border-2 border-blue-500 bg-blue-950/80 transition shadow-md';
+                empDot.className = 'w-3.5 h-3.5 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20';
+                adminCard.className = 'w-full text-left p-4 rounded-2xl border-2 border-slate-700 bg-slate-800/60 hover:border-slate-600 transition';
+                adminDot.className = 'w-3.5 h-3.5 rounded-full bg-slate-600';
+                pill.textContent = 'Çalışan';
+                pill.className = 'text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-950';
             }
+            populateLoginUserSelect();
+            document.getElementById('login-error-msg').classList.add('hidden');
+            document.getElementById('login-pin-input').value = '';
+            document.getElementById('login-pin-input').focus();
+        }
 
-            render() {
-                // İstatistikler
-                document.getElementById('stat-stock-count').innerText = this.state.stock.reduce((acc, item) => acc + item.qty, 0);
-                document.getElementById('stat-service-count').innerText = this.state.services.length;
-                document.getElementById('stat-quote-count').innerText = this.state.quotes.length;
+        function populateLoginUserSelect(preselectId) {
+            const users = getStaffUsers().filter(u => u.role === selectedLoginRole);
+            const sel = document.getElementById('login-user-select');
+            if (!sel) return;
+            sel.innerHTML = '';
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = u.name;
+                if (preselectId && u.id === preselectId) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        }
 
-                // Servis Listesi
-                const sList = document.getElementById('serviceList');
-                sList.innerHTML = this.state.services.length === 0 ? '<p class="text-sm text-slate-500">Henüz kayıtlı servis raporu yok.</p>' :
-                    this.state.services.map(s => `
-                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-1">
-                            <div class="flex justify-between items-center text-xs text-slate-400">
-                                <span class="font-semibold text-cyan-400">${s.client}</span>
-                                <span>${s.date}</span>
-                            </div>
-                            <p class="text-sm font-medium text-white">Model: ${s.model}</p>
-                            <p class="text-xs text-slate-300">İşlem: ${s.details}</p>
-                        </div>
-                    `).join('');
-
-                // Stok Tablosu
-                const stBody = document.getElementById('stockTableBody');
-                stBody.innerHTML = this.state.stock.length === 0 ? '<tr><td colspan="3" class="py-4 text-center text-slate-500">Stokta parça bulunmuyor.</td></tr>' :
-                    this.state.stock.map(st => `
-                        <tr class="border-b border-slate-800/50">
-                            <td class="py-3 px-4 font-medium text-white">${st.name}</td>
-                            <td class="py-3 px-4"><span class="bg-cyan-950 text-cyan-300 px-2.5 py-1 rounded-lg text-xs border border-cyan-800/50">${st.qty} Adet</span></td>
-                            <td class="py-3 px-4 text-right">
-                                <button onclick="app.deleteStock(${st.id})" class="text-red-400 hover:text-red-300 text-xs bg-red-950/30 px-2.5 py-1 rounded-lg border border-red-900/50">Sil</button>
-                            </td>
-                        </tr>
-                    `).join('');
-
-                // Teklif Listesi
-                const qList = document.getElementById('quoteList');
-                qList.innerHTML = this.state.quotes.length === 0 ? '<p class="text-sm text-slate-500">Henüz kayıtlı teklif yok.</p>' :
-                    this.state.quotes.map(q => `
-                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
-                            <div>
-                                <p class="text-sm font-semibold text-white">${q.client}</p>
-                                <span class="text-xs text-slate-400">${q.date}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-sm font-bold text-emerald-400">${q.amount.toLocaleString('tr-TR')} TL</span>
-                            </div>
-                        </div>
-                    `).join('');
-
-                lucide.createIcons();
+        function applyActiveUserToUI(user) {
+            if (!user) return;
+            const isAdmin = user.role === 'admin';
+            document.getElementById('active-staff-name').textContent = user.name;
+            const badge = document.getElementById('active-staff-role-badge');
+            badge.textContent = isAdmin ? 'Yönetici' : 'Çalışan';
+            badge.className = isAdmin ? 'px-2 py-0.2 rounded bg-amber-400 text-slate-950 font-extrabold text-[10px]' : 'px-2 py-0.2 rounded bg-blue-600 text-white font-extrabold text-[10px]';
+            const signer = document.getElementById('srv-tech-signer-name');
+            if (signer) signer.textContent = user.name;
+            const adminTabBtn = document.getElementById('tab-btn-admin');
+            if (isAdmin) adminTabBtn.classList.remove('hidden');
+            else {
+                adminTabBtn.classList.add('hidden');
+                if (!document.getElementById('panel-admin').classList.contains('hidden')) switchTab('service');
             }
         }
 
-        const app = new CompressorApp();
+        function checkInitialLockState() {
+            selectLoginRole('admin');
+            const user = getActiveUser();
+            const lockEl = document.getElementById('login-lock-screen');
+            if (user) {
+                applyActiveUserToUI(user);
+                lockEl.classList.add('hidden');
+            } else {
+                lockEl.classList.remove('hidden');
+                setTimeout(() => document.getElementById('login-pin-input').focus(), 100);
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const selectedUserId = document.getElementById('login-user-select').value;
+            const users = getStaffUsers();
+            const user = users.find(u => u.id === selectedUserId && u.role === selectedLoginRole);
+            const entered = document.getElementById('login-pin-input').value.trim();
+            const errEl = document.getElementById('login-error-msg');
+
+            if (user && entered === user.pin) {
+                sessionStorage.setItem(SESSION_USER_KEY, user.id);
+                applyActiveUserToUI(user);
+                renderServicePartsTable();
+                renderStockTable();
+                populateQuoteStockPicker();
+                renderQuoteItems();
+                errEl.classList.add('hidden');
+                document.getElementById('login-pin-input').value = '';
+                document.getElementById('login-lock-screen').classList.add('hidden');
+                showToast(`Hoş geldiniz ${user.name}.`);
+            } else {
+                errEl.textContent = 'Hatalı şifre girdiniz.';
+                errEl.classList.remove('hidden');
+                document.getElementById('login-pin-input').value = '';
+                document.getElementById('login-pin-input').focus();
+            }
+        });
+
+        function lockApp() {
+            const current = getActiveUser();
+            sessionStorage.removeItem(SESSION_USER_KEY);
+            setPreviewMode(false);
+            switchTab('service');
+            selectLoginRole(current ? current.role : 'admin');
+            if (current) populateLoginUserSelect(current.id);
+            document.getElementById('login-lock-screen').classList.remove('hidden');
+            setTimeout(() => document.getElementById('login-pin-input').focus(), 100);
+        }
+
+        /* YÖNETİCİ PANELİ */
+        function renderAdminPanel() {
+            const activeUser = getActiveUser();
+            if (!activeUser || activeUser.role !== 'admin') return;
+            const settings = getAdminSettings();
+            document.getElementById('admin-toggle-employee-cost').checked = Boolean(settings.allowEmployeeSeeCost);
+
+            const users = getStaffUsers();
+            const tbody = document.getElementById('admin-staff-tbody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const isAdmin = u.role === 'admin';
+                const isSelf = activeUser.id === u.id;
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-extrabold text-slate-900">${escapeHtml(u.name)} ${isSelf ? '<span class="ml-1 text-[10px] bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded">Aktif</span>' : ''}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${isAdmin ? 'bg-amber-100 text-amber-950' : 'bg-blue-100 text-blue-950'}">${isAdmin ? 'Yönetici' : 'Çalışan'}</span></td>
+                    <td class="py-3 px-4"><input type="text" data-id="${u.id}" class="adm-pin-input w-28 px-2.5 py-1 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 bg-slate-50 outline-none" value="${escapeHtml(u.pin)}"></td>
+                    <td class="py-3 px-4 text-right">
+                        <button type="button" data-id="${u.id}" class="adm-save-pin-btn px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">Güncelle</button>
+                        ${!isSelf ? `<button type="button" data-id="${u.id}" class="adm-del-user-btn ml-1 px-2.5 py-1.5 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">Sil</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('admin-toggle-employee-cost').addEventListener('change', function () {
+            const settings = getAdminSettings();
+            settings.allowEmployeeSeeCost = this.checked;
+            saveAdminSettings(settings);
+            showToast(this.checked ? 'Çalışanlar geliş fiyatlarını görebilir.' : 'Geliş fiyatları gizlendi.');
+        });
+
+        function adminAddStaffUser() {
+            const name = document.getElementById('adm-new-name').value.trim();
+            const role = document.getElementById('adm-new-role').value;
+            const pin = document.getElementById('adm-new-pin').value.trim();
+            if (!name || pin.length < 4) {
+                showToast('Lütfen geçerli ad ve en az 4 haneli şifre girin.');
+                return;
+            }
+            const users = getStaffUsers();
+            users.push({ id: 'staff-' + Date.now(), name, role, pin });
+            saveStaffUsers(users);
+            document.getElementById('adm-new-name').value = '';
+            renderAdminPanel();
+            showToast(`${name} eklendi.`);
+        }
+
+        document.getElementById('admin-staff-tbody').addEventListener('click', function (e) {
+            const saveBtn = e.target.closest('.adm-save-pin-btn');
+            if (saveBtn) {
+                const userId = saveBtn.dataset.id;
+                const input = document.querySelector(`.adm-pin-input[data-id="${userId}"]`);
+                const newPin = input ? input.value.trim() : '';
+                if (newPin.length < 4) { showToast('Şifre en az 4 hane olmalı.'); return; }
+                const users = getStaffUsers();
+                const target = users.find(u => u.id === userId);
+                if (target) { target.pin = newPin; saveStaffUsers(users); showToast('Şifre güncellendi.'); }
+                return;
+            }
+            const delBtn = e.target.closest('.adm-del-user-btn');
+            if (delBtn) {
+                let users = getStaffUsers().filter(u => u.id !== delBtn.dataset.id);
+                saveStaffUsers(users);
+                renderAdminPanel();
+                showToast('Personel silindi.');
+            }
+        });
+
+        /* DATA & STORAGE */
+        const STORAGE_KEY = 'asya_kompresor_sistem_v5';
+        const LOGO_KEY = 'asya_kompresor_logo_v4';
+        const DEFAULT_PART_NAMES = ['SEPERATÖR', 'SEPERATÖR CONTASI', 'YAĞ FİLTRESİ', 'HAVA FİLTRESİ', 'PANEL FİLTRESİ', 'KOMPRESÖR YAĞI', 'YAĞ TAPA ORİNGİ', 'SERVİS'];
+
+        const INITIAL_DATA = {
+            quoteCounter: 1,
+            quoteNotes: '',
+            notifyEmail: 'cengizaktan2424@gmail.com',
+            notifyPhone: '+90 546 505 69 24',
+            customers: [
+                {
+                    id: 'cust-1',
+                    name: 'Azim Plastik',
+                    address: 'İkitelli O.S.B. Metal-İş San. Sit. Başakşehir / İST.',
+                    taxInfo: 'İkitelli V.D. / 123 456 7890',
+                    tel: '0212 549 11 22',
+                    contactPerson: 'Mehmet Yılmaz',
+                    phone: '0532 410 22 33',
+                    machines: [
+                        {
+                            id: 'mach-1',
+                            model: 'VVK 30 Plus',
+                            serialNo: '80',
+                            lastDate: '12.09.2026',
+                            lastHours: 19951,
+                            serviceTypes: ['01 - Fatura'],
+                            workDone: 'Makinenin seperatör bakımı yapıldı, genel temizliği ve kontrolleri yapıldı.',
+                            nextDate: '12.03.2027',
+                            nextHours: 23951,
+                            note: 'Çalışma sıcaklığı normal.',
+                            parts: [
+                                { name: 'SEPERATÖR', qty: 1, unitPrice: 3000 },
+                                { name: 'YAĞ FİLTRESİ', qty: 1, unitPrice: 1000 },
+                                { name: 'HAVA FİLTRESİ', qty: 1, unitPrice: 1000 },
+                                { name: 'KOMPRESÖR YAĞI', qty: 1, unitPrice: 2500 },
+                                { name: 'SERVİS', qty: 1, unitPrice: 2000 }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            stock: [
+                { code: 'KMP-01', name: 'SEPERATÖR', model: 'Vidalı', costPrice: 1850, inQty: 10, outQty: 4, min: 3 },
+                { code: 'KMP-03', name: 'YAĞ FİLTRESİ', model: '22-37 kW', costPrice: 420, inQty: 10, outQty: 8, min: 4 },
+                { code: 'KMP-04', name: 'HAVA FİLTRESİ', model: 'VVK', costPrice: 480, inQty: 12, outQty: 4, min: 3 },
+                { code: 'KMP-06', name: 'KOMPRESÖR YAĞI', model: '46 Numara (20 Lt)', costPrice: 2400, inQty: 8, outQty: 5, min: 4 }
+            ],
+            quoteItems: [
+                { desc: 'Vidalı Kompresör Seperatör Filtresi', qty: 1, price: 3250 },
+                { desc: 'Bakım Seti ve Yağ', qty: 1, price: 4900 }
+            ]
+        };
+
+        let state = loadState();
+        let selectedCustomerId = state.customers[0].id;
+        let selectedMachineId = state.customers[0].machines[0].id;
+        let isNewMachineMode = false;
+        let serviceParts = [];
+        let isServicePriceVisible = false;
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && Array.isArray(parsed.customers)) return parsed;
+                }
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(INITIAL_DATA));
+        }
+
+        function saveState() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+        }
+
+        function exportJsonBackup() {
+            const payload = { exportedAt: new Date().toISOString(), logo: localStorage.getItem(LOGO_KEY), staffUsers: getStaffUsers(), data: state };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Asya_Kompresor_Yedek.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Yedek indirildi.');
+        }
+
+        document.getElementById('hidden-backup-input').addEventListener('change', function (e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                try {
+                    const parsed = JSON.parse(ev.target.result);
+                    if (parsed && parsed.data) {
+                        state = parsed.data;
+                        saveState();
+                        if (parsed.logo) localStorage.setItem(LOGO_KEY, parsed.logo);
+                        if (parsed.staffUsers) saveStaffUsers(parsed.staffUsers);
+                        location.reload();
+                    }
+                } catch (err) { showToast('Yedek yüklenemedi.'); }
+            };
+            reader.readAsText(file);
+        });
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function getTodayStr() {
+            const d = new Date();
+            return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+        }
+
+        function showToast(msg) {
+            const box = document.getElementById('toast-box');
+            box.textContent = msg;
+            box.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => box.classList.add('hidden'), 3000);
+        }
+
+        /* LOGO */
+        function renderLogos() {
+            const savedLogo = localStorage.getItem(LOGO_KEY);
+            document.querySelectorAll('.logo-slot').forEach(slot => {
+                if (savedLogo) slot.innerHTML = `<img src="${savedLogo}" alt="Logo" class="h-12 w-auto object-contain rounded">`;
+                else slot.innerHTML = `<div class="w-12 h-12 bg-blue-900 text-white flex items-center justify-center font-black rounded text-sm">AK</div>`;
+            });
+        }
+        function triggerLogoUpload() { document.getElementById('hidden-logo-input').click(); }
+        document.getElementById('hidden-logo-input').addEventListener('change', function (e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (ev) { localStorage.setItem(LOGO_KEY, ev.target.result); renderLogos(); showToast('Logo güncellendi.'); };
+            reader.readAsDataURL(file);
+        });
+
+        /* SEKME & ÖNİZLEME */
+        function switchTab(tabName) {
+            if (tabName === 'admin' && getActiveUser()?.role !== 'admin') { showToast('Yetkisiz erişim.'); return; }
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById('panel-' + tabName).classList.remove('hidden');
+            document.querySelectorAll('.tab-nav-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white', 'shadow'));
+            const activeBtn = document.getElementById('tab-btn-' + tabName);
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow');
+            if (tabName === 'stock') renderStockTable();
+            if (tabName === 'quote') { populateQuoteCustomers(); populateQuoteStockPicker(); renderQuoteItems(); }
+            if (tabName === 'service') renderServicePartsTable();
+            if (tabName === 'admin') renderAdminPanel();
+        }
+
+        function setPreviewMode(enabled) {
+            if (enabled) {
+                document.body.classList.add('preview-mode');
+                document.getElementById('preview-exit-bar').classList.remove('hidden');
+            } else {
+                document.body.classList.remove('preview-mode');
+                document.getElementById('preview-exit-bar').classList.add('hidden');
+            }
+        }
+
+        function toggleQuickAddBox(boxId) { document.getElementById(boxId).classList.toggle('hidden'); }
+
+        /* HİZMET FORMU FONKSİYONLARI */
+        function populateServiceSelectors() {
+            const custSel = document.getElementById('srv-customer-select');
+            custSel.innerHTML = '';
+            state.customers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.name} (${c.machines.length} Makine)`;
+                if (c.id === selectedCustomerId) opt.selected = true;
+                custSel.appendChild(opt);
+            });
+
+            const customer = state.customers.find(c => c.id === selectedCustomerId) || state.customers[0];
+            if (!customer) return;
+            selectedCustomerId = customer.id;
+
+            const machSel = document.getElementById('srv-machine-select');
+            machSel.innerHTML = '';
+            customer.machines.forEach((m, idx) => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `Makine ${idx + 1}: ${m.model} (Seri: ${m.serialNo})`;
+                if (!isNewMachineMode && m.id === selectedMachineId) opt.selected = true;
+                machSel.appendChild(opt);
+            });
+            const newOpt = document.createElement('option');
+            newOpt.value = '__NEW__';
+            newOpt.textContent = '+ Bu Firmaya Yeni Makine Ekle';
+            if (isNewMachineMode) newOpt.selected = true;
+            machSel.appendChild(newOpt);
+        }
+
+        function loadActiveServiceRecord() {
+            const customer = state.customers.find(c => c.id === selectedCustomerId) || state.customers[0];
+            if (!customer) return;
+
+            document.getElementById('srv-cust-name').value = customer.name || '';
+            document.getElementById('srv-cust-address').value = customer.address || '';
+            document.getElementById('srv-cust-tax').value = customer.taxInfo || '';
+            document.getElementById('srv-cust-tel').value = customer.tel || '';
+            document.getElementById('srv-cust-contact').value = customer.contactPerson || '';
+            document.getElementById('srv-cust-phone').value = customer.phone || '';
+
+            const historyCard = document.getElementById('srv-history-card');
+            if (isNewMachineMode || customer.machines.length === 0) {
+                isNewMachineMode = true;
+                document.getElementById('srv-mach-model').value = '';
+                document.getElementById('srv-mach-serial').value = '';
+                document.getElementById('srv-date').value = getTodayStr();
+                document.getElementById('srv-hours').value = '';
+                document.getElementById('srv-work-done').value = '';
+                serviceParts = DEFAULT_PART_NAMES.map(name => ({ name, qty: 0, unitPrice: 0 }));
+                renderServicePartsTable();
+                historyCard.innerHTML = `<strong>Yeni Makine Kaydı</strong> (${escapeHtml(customer.name)})`;
+                return;
+            }
+
+            const machine = customer.machines.find(m => m.id === selectedMachineId) || customer.machines[0];
+            if (!machine) return;
+            selectedMachineId = machine.id;
+
+            document.getElementById('srv-mach-model').value = machine.model || '';
+            document.getElementById('srv-mach-serial').value = machine.serialNo || '';
+            document.getElementById('srv-date').value = machine.lastDate || getTodayStr();
+            document.getElementById('srv-hours').value = machine.lastHours || '';
+            document.getElementById('srv-work-done').value = machine.workDone || '';
+            document.getElementById('srv-next-date').value = machine.nextDate || '';
+            document.getElementById('srv-next-hours').value = machine.nextHours || '';
+
+            serviceParts = JSON.parse(JSON.stringify(machine.parts || []));
+            if (serviceParts.length === 0) serviceParts = DEFAULT_PART_NAMES.map(name => ({ name, qty: 0, unitPrice: 0 }));
+            renderServicePartsTable();
+            historyCard.innerHTML = `<strong>Son Bakım:</strong> ${escapeHtml(machine.lastDate)} — Saat: ${machine.lastHours}`;
+        }
+
+        document.getElementById('srv-customer-select').addEventListener('change', function () {
+            selectedCustomerId = this.value;
+            isNewMachineMode = false;
+            const cust = state.customers.find(c => c.id === selectedCustomerId);
+            selectedMachineId = cust && cust.machines[0] ? cust.machines[0].id : '';
+            populateServiceSelectors();
+            loadActiveServiceRecord();
+        });
+
+        document.getElementById('srv-machine-select').addEventListener('change', function () {
+            isNewMachineMode = (this.value === '__NEW__');
+            if (!isNewMachineMode) selectedMachineId = this.value;
+            loadActiveServiceRecord();
+        });
+
+        function prepareNewMachineForCustomer() {
+            isNewMachineMode = true;
+            populateServiceSelectors();
+            loadActiveServiceRecord();
+        }
+
+        function createNewCustomerFromService() {
+            const name = document.getElementById('quick-cust-name').value.trim();
+            if (!name) { showToast('Firma adı girin.'); return; }
+            const newId = 'cust-' + Date.now();
+            state.customers.push({ id: newId, name, address: document.getElementById('quick-cust-address').value.trim(), machines: [] });
+            saveState();
+            selectedCustomerId = newId;
+            isNewMachineMode = true;
+            populateServiceSelectors();
+            loadActiveServiceRecord();
+            toggleQuickAddBox('srv-new-customer-box');
+            showToast('Firma eklendi.');
+        }
+
+        function insertStandardWorkNote() {
+            const area = document.getElementById('srv-work-done');
+            area.value = "Makinenin periyodik bakımı yapıldı, filtreler ve yağ yenilendi, test edildi.";
+        }
+
+        function resetToBlankServiceForm() {
+            isNewMachineMode = true;
+            document.getElementById('srv-mach-model').value = '';
+            document.getElementById('srv-mach-serial').value = '';
+            document.getElementById('srv-hours').value = '';
+            document.getElementById('srv-work-done').value = '';
+            serviceParts = DEFAULT_PART_NAMES.map(name => ({ name, qty: 0, unitPrice: 0 }));
+            renderServicePartsTable();
+            showToast('Yeni form hazır.');
+        }
+
+        document.getElementById('toggle-srv-price').addEventListener('change', function () {
+            isServicePriceVisible = this.checked;
+            renderServicePartsTable();
+        });
+
+        function renderServicePartsTable() {
+            const tbody = document.getElementById('srv-parts-tbody');
+            tbody.innerHTML = '';
+            let grandTotal = 0;
+            serviceParts.forEach((part, idx) => {
+                const qty = Number(part.qty) || 0;
+                const price = Number(part.unitPrice) || 0;
+                const lineTotal = qty * price;
+                grandTotal += lineTotal;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-1 px-1 text-center font-bold border-r">${idx + 1}</td>
+                    <td class="py-1 px-2 border-r"><input type="text" data-idx="${idx}" class="srv-part-name w-full font-bold uppercase bg-transparent outline-none text-[11px]" value="${escapeHtml(part.name)}"></td>
+                    <td class="py-1 px-1 text-center"><input type="number" min="0" data-idx="${idx}" class="srv-part-qty w-12 text-center font-extrabold bg-transparent outline-none" value="${qty || ''}"></td>
+                    <td class="srv-price-col ${isServicePriceVisible ? '' : 'hidden'} py-1 px-1.5 text-right border-l"><input type="number" data-idx="${idx}" class="srv-part-price w-16 text-right bg-transparent outline-none" value="${price || ''}"></td>
+                    <td class="srv-price-col ${isServicePriceVisible ? '' : 'hidden'} py-1 px-2 text-right font-bold border-l">${lineTotal ? lineTotal + ' ₺' : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('srv-grand-total').textContent = grandTotal.toLocaleString('tr-TR') + ' ₺';
+            document.querySelectorAll('.srv-price-col').forEach(el => el.classList.toggle('hidden', !isServicePriceVisible));
+            document.getElementById('srv-price-tfoot').classList.toggle('hidden', !isServicePriceVisible);
+        }
+
+        document.getElementById('srv-parts-tbody').addEventListener('change', function (e) {
+            const idx = Number(e.target.dataset.idx);
+            if (e.target.classList.contains('srv-part-name')) serviceParts[idx].name = e.target.value.toUpperCase();
+            if (e.target.classList.contains('srv-part-qty')) serviceParts[idx].qty = Math.max(0, parseInt(e.target.value) || 0);
+            if (e.target.classList.contains('srv-part-price')) serviceParts[idx].unitPrice = Math.max(0, parseFloat(e.target.value) || 0);
+            renderServicePartsTable();
+        });
+
+        function addBlankServicePartRow() { serviceParts.push({ name: '', qty: 1, unitPrice: 0 }); renderServicePartsTable(); }
+
+        function saveServiceRecordAndDeductStock() {
+            const custName = document.getElementById('srv-cust-name').value.trim();
+            const model = document.getElementById('srv-mach-model').value.trim();
+            if (!custName || !model) { showToast('Müşteri ve Model zorunludur.'); return; }
+
+            let customer = state.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
+            if (!customer) {
+                customer = { id: 'cust-' + Date.now(), name: custName, machines: [] };
+                state.customers.push(customer);
+            }
+
+            const record = {
+                id: isNewMachineMode ? 'mach-' + Date.now() : selectedMachineId,
+                model, serialNo: document.getElementById('srv-mach-serial').value.trim(),
+                lastDate: document.getElementById('srv-date').value.trim(),
+                lastHours: parseInt(document.getElementById('srv-hours').value) || 0,
+                workDone: document.getElementById('srv-work-done').value.trim(),
+                nextDate: document.getElementById('srv-next-date').value.trim(),
+                nextHours: parseInt(document.getElementById('srv-next-hours').value) || 0,
+                parts: JSON.parse(JSON.stringify(serviceParts))
+            };
+
+            if (isNewMachineMode) customer.machines.push(record);
+            else {
+                const idx = customer.machines.findIndex(m => m.id === selectedMachineId);
+                if (idx >= 0) customer.machines[idx] = record;
+                else customer.machines.push(record);
+            }
+
+            // Stok düşüşü
+            serviceParts.forEach(p => {
+                if (p.qty > 0) {
+                    const stk = state.stock.find(s => s.name.toUpperCase() === p.name.toUpperCase());
+                    if (stk) stk.outQty = (Number(stk.outQty) || 0) + Number(p.qty);
+                }
+            });
+
+            saveState();
+            showToast('Form kaydedildi ve stok güncellendi.');
+        }
+
+        /* STOK & TEKLİF & HATIRLATICI GENEL FONKSİYONLAR */
+        function renderStockTable() {
+            const tbody = document.getElementById('stock-table-tbody');
+            tbody.innerHTML = '';
+            state.stock.forEach((item, idx) => {
+                const rem = (Number(item.inQty) || 0) - (Number(item.outQty) || 0);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-mono text-xs">${escapeHtml(item.code)}</td>
+                    <td class="py-2.5 px-3 font-extrabold text-xs">${escapeHtml(item.name)}</td>
+                    <td class="py-2.5 px-3 text-xs">${escapeHtml(item.model)}</td>
+                    <td class="py-2.5 px-3 text-right">${canCurrentUserSeeCost() ? (item.costPrice || 0) + ' ₺' : 'Gizli'}</td>
+                    <td class="py-2.5 px-3 text-center">${item.inQty}</td>
+                    <td class="py-2.5 px-3 text-center">${item.outQty}</td>
+                    <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${rem <= item.min ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900'}">${rem}</span></td>
+                    <td class="py-2.5 px-3 text-center">${item.min}</td>
+                    <td class="py-2.5 px-3 text-center"><button type="button" onclick="adjustStock(${idx}, 1)" class="px-2 bg-blue-100 text-blue-900 rounded font-bold">+</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        function adjustStock(idx, val) { state.stock[idx].inQty += val; saveState(); renderStockTable(); }
+        function addNewStockItem() {
+            const name = document.getElementById('stk-new-name').value.trim().toUpperCase();
+            if (!name) return;
+            state.stock.push({ code: 'KMP-' + (state.stock.length + 1), name, model: 'Genel', costPrice: 0, inQty: 5, outQty: 0, min: 2 });
+            saveState();
+            renderStockTable();
+            showToast('Parça eklendi.');
+        }
+
+        function populateQuoteCustomers() {
+            const sel = document.getElementById('qt-customer-select');
+            sel.innerHTML = '';
+            state.customers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id; opt.textContent = c.name;
+                sel.appendChild(opt);
+            });
+            applySelectedCustomerToQuote();
+        }
+        function applySelectedCustomerToQuote() {
+            const c = state.customers.find(x => x.id === document.getElementById('qt-customer-select').value);
+            if (c) { document.getElementById('qt-cust-name').value = c.name; document.getElementById('qt-cust-address').value = c.address || ''; }
+        }
+        document.getElementById('qt-customer-select').addEventListener('change', applySelectedCustomerToQuote);
+
+        function populateQuoteStockPicker() {
+            const picker = document.getElementById('qt-stock-picker');
+            picker.innerHTML = '<option value="">-- Depodan Seç --</option>';
+            state.stock.forEach((s, i) => picker.innerHTML += `<option value="${i}">${s.name}</option>`);
+        }
+        function addSelectedStockToQuote() {
+            const idx = document.getElementById('qt-stock-picker').value;
+            if (idx === '') return;
+            const s = state.stock[idx];
+            state.quoteItems.push({ desc: s.name, qty: 1, price: (s.costPrice || 1000) * 1.3 });
+            saveState();
+            renderQuoteItems();
+        }
+        function renderQuoteItems() {
+            const tbody = document.getElementById('qt-items-tbody');
+            tbody.innerHTML = '';
+            let sub = 0;
+            state.quoteItems.forEach((it, idx) => {
+                sub += it.qty * it.price;
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-2 text-center border-r">${idx + 1}</td>
+                        <td class="py-2 px-2 border-r"><input type="text" value="${escapeHtml(it.desc)}" onchange="state.quoteItems[${idx}].desc=this.value;saveState();" class="w-full bg-transparent outline-none"></td>
+                        <td class="py-2 text-center border-r"><input type="number" value="${it.qty}" onchange="state.quoteItems[${idx}].qty=Number(this.value);saveState();renderQuoteItems();" class="w-12 text-center bg-transparent outline-none"></td>
+                        <td class="py-2 px-2 text-right border-r"><input type="number" value="${it.price}" onchange="state.quoteItems[${idx}].price=Number(this.value);saveState();renderQuoteItems();" class="w-20 text-right bg-transparent outline-none"></td>
+                        <td class="py-2 px-2 text-right font-bold">${it.qty * it.price} ₺</td>
+                        <td class="screen-only text-center"><button type="button" onclick="state.quoteItems.splice(${idx},1);saveState();renderQuoteItems();" class="text-rose-600 font-bold">×</button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('qt-subtotal').textContent = sub.toLocaleString('tr-TR') + ' ₺';
+            document.getElementById('qt-grandtotal').textContent = (sub * 1.2).toLocaleString('tr-TR') + ' ₺';
+        }
+        function addBlankQuoteRow() { state.quoteItems.push({ desc: 'Yeni Kalem', qty: 1, price: 1000 }); saveState(); renderQuoteItems(); }
+        function incrementQuoteNumber() { state.quoteCounter++; saveState(); document.getElementById('qt-no').value = `TEK-2026-${String(state.quoteCounter).padStart(3, '0')}`; }
+
+        function openReminderModal() { document.getElementById('reminder-modal').classList.remove('hidden'); }
+        function closeReminderModal() { document.getElementById('reminder-modal').classList.add('hidden'); }
+
+        function initSignaturePad(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2;
+            let drawing = false;
+            canvas.addEventListener('mousedown', () => drawing = true);
+            canvas.addEventListener('mousemove', (e) => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
+            window.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+        }
+        function clearSignaturePad(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderLogos();
+            checkInitialLockState();
+            document.getElementById('qt-date').value = getTodayStr();
+            populateServiceSelectors();
+            loadActiveServiceRecord();
+            initSignaturePad('sig-srv-cust');
+            initSignaturePad('sig-srv-tech');
+            initSignaturePad('sig-qt-company');
+        });
     </script>
 </body>
 </html>
