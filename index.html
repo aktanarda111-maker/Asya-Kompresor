@@ -1,198 +1,351 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="h-full bg-slate-950">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASYA KOMPRESÖR — Dijital Servis, Stok ve Teklif Sistemi</title>
+    <title>ASYA KOMPRESÖR - Yönetim ve Servis Paneli</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* =====================================================================
-           GİST BAĞLANTI AYARLARI (KENDİ BİLGİLERİNİ BURAYA YAZACAKSIN)
-        ====================================================================== */
-        const GIST_ID = "BURAYA_GIST_ID_YAZILACAK";
-        const GIST_TOKEN = "BURAYA_GITHUB_TOKEN_YAZILACAK";
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-            color: #0f172a;
-        }
-
-        .a4-sheet {
-            background: #ffffff;
-            width: 100%;
-            max-width: 210mm;
-            margin: 0 auto;
-            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
-            border: 1px solid #cbd5e1;
-        }
-
-        body.preview-mode {
-            background-color: #334155;
-        }
-        body.preview-mode .screen-only {
-            display: none !important;
-        }
-        body.preview-mode .a4-sheet {
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: none;
-            margin-top: 12px;
-            margin-bottom: 24px;
-        }
-
         @media print {
-            @page {
-                size: A4 portrait;
-                margin: 8mm;
-            }
-            body {
-                background: #ffffff !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            .screen-only,
-            #top-navbar,
-            #preview-exit-bar,
-            #toast-box,
-            #login-lock-screen {
-                display: none !important;
-            }
-            .tab-panel.hidden {
-                display: none !important;
-            }
-            .a4-sheet {
-                box-shadow: none !important;
-                border: none !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
         }
     </style>
 </head>
-<body class="min-h-screen pb-12">
+<body class="h-full font-sans text-slate-100 antialiased selection:bg-cyan-500 selection:text-white">
 
-    <!-- GİRİŞ EKRANI -->
-    <div id="login-lock-screen" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div class="text-center space-y-1">
-                <h2 class="text-xl font-extrabold text-blue-950 tracking-tight">ASYA KOMPRESÖR</h2>
-                <p class="text-xs font-bold text-slate-500">Cengiz Aktan — Servis, Stok &amp; Teklif</p>
+    <div id="app" class="min-h-full flex flex-col">
+        <!-- Üst Navigasyon -->
+        <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 no-print">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-cyan-600 p-2 rounded-lg text-white">
+                        <i data-lucide="cpu" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-wide text-white">ASYA KOMPRESÖR</h1>
+                        <p class="text-xs text-slate-400">Endüstriyel Hava Sistemleri Yönetim Paneli</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="currentTime" class="text-xs text-slate-400 hidden sm:inline"></span>
+                    <button onclick="app.resetData()" class="text-xs bg-red-950/50 hover:bg-red-900/50 text-red-300 border border-red-800/50 px-3 py-1.5 rounded-lg transition">Verileri Sıfırla</button>
+                </div>
             </div>
+        </header>
+
+        <!-- Ana İçerik Alanı -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
             
-            <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
-                <div>
-                    <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Personel Seçin</label>
-                    <select id="login-user-select" class="w-full px-3.5 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-800 bg-slate-50 text-sm font-bold text-slate-900 outline-none">
-                        <option value="cengiz">Cengiz Aktan (Yönetici)</option>
-                        <option value="personel">Çalışan</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Giriş Şifresi (PIN)</label>
-                    <input type="password" id="login-pin-input" placeholder="1234" value="1234"
-                           class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-800 text-center text-lg font-extrabold tracking-widest text-slate-900 outline-none bg-slate-50">
-                </div>
-                <button type="submit" class="w-full py-3.5 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-extrabold text-sm shadow-md transition">
-                    Sisteme Giriş Yap
+            <!-- Sol Menü / Sekmeler -->
+            <div class="lg:col-span-1 space-y-2 no-print">
+                <button onclick="app.switchTab('dashboard')" id="btn-dashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-cyan-600 text-white shadow-lg shadow-cyan-900/20">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Genel Durum & Özet</span>
                 </button>
-            </form>
-        </div>
+                <button onclick="app.switchTab('service')" id="btn-service" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800">
+                    <i data-lucide="wrench" class="w-5 h-5"></i>
+                    <span>Servis & Bakım Raporu</span>
+                </button>
+                <button onclick="app.switchTab('stock')" id="btn-stock" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span>Stok & Parça Takibi</span>
+                </button>
+                <button onclick="app.switchTab('quote')" id="btn-quote" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>Teklif Oluşturucu</span>
+                </button>
+            </div>
+
+            <!-- Sağ İçerik Ekranı -->
+            <div class="lg:col-span-3 space-y-6">
+                
+                <!-- 1. DASHBOARD SEKMESİ -->
+                <div id="tab-dashboard" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                            <div class="flex items-center justify-between text-slate-400 mb-2">
+                                <span class="text-sm font-medium">Toplam Stok Kalemi</span>
+                                <i data-lucide="package" class="w-5 h-5 text-cyan-400"></i>
+                            </div>
+                            <div id="stat-stock-count" class="text-3xl font-bold text-white">0</div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                            <div class="flex items-center justify-between text-slate-400 mb-2">
+                                <span class="text-sm font-medium">Kayıtlı Servis Raporu</span>
+                                <i data-lucide="clipboard-check" class="w-5 h-5 text-emerald-400"></i>
+                            </div>
+                            <div id="stat-service-count" class="text-3xl font-bold text-white">0</div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                            <div class="flex items-center justify-between text-slate-400 mb-2">
+                                <span class="text-sm font-medium">Bekleyen Teklifler</span>
+                                <i data-lucide="receipt" class="w-5 h-5 text-amber-400"></i>
+                            </div>
+                            <div id="stat-quote-count" class="text-3xl font-bold text-white">0</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Hızlı İşlem Kılavuzu</h3>
+                        <p class="text-sm text-slate-400 mb-4">
+                            ASYA KOMPRESÖR saha yönetimi sisteminiz günceldir. Sol menüyü kullanarak kompresör bakım raporu oluşturabilir, stoktaki yağ, filtre ve yedek parçaları güncelleyebilir veya müşterilere profesyonel fiyat teklifi çıkarabilirsiniz.
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="app.switchTab('service')" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition">Yeni Servis Raporu Aç</button>
+                            <button onclick="app.switchTab('stock')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition border border-slate-700">Stok Kontrol Et</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. SERVİS & BAKIM RAPORU SEKMESİ -->
+                <div id="tab-service" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                            <i data-lucide="wrench" class="w-5 h-5 text-cyan-400"></i>
+                            <span>Kompresör Servis ve Bakım Formu</span>
+                        </h3>
+                        <form id="serviceForm" onsubmit="app.saveService(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Müşteri / Firma Adı</label>
+                                    <input type="text" id="srv-client" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Kompresör Model / Güç</label>
+                                    <input type="text" id="srv-model" placeholder="Örn: Vidalı 30kW" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Yapılan İşlem / Değişen Parçalar</label>
+                                <textarea id="srv-details" rows="3" placeholder="Örn: Hava filtresi ve seperatör yenilendi, yağ seviyesi tamamlandı." required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-xl transition text-sm">Servis Raporunu Kaydet</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <h4 class="text-md font-semibold text-white mb-3">Geçmiş Servis Raporları</h4>
+                        <div id="serviceList" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- 3. STOK TAKİBİ SEKMESİ -->
+                <div id="tab-stock" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                            <i data-lucide="boxes" class="w-5 h-5 text-cyan-400"></i>
+                            <span>Yeni Parça / Ürün Ekle</span>
+                        </h3>
+                        <form id="stockForm" onsubmit="app.saveStock(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Parça Adı</label>
+                                <input type="text" id="stk-name" placeholder="Örn: 10 Mikron Filtre" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Adet</label>
+                                <input type="number" id="stk-qty" placeholder="0" min="0" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-xl transition text-sm">Stok Ekle</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <h4 class="text-md font-semibold text-white mb-3">Mevcut Stok Durumu</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-slate-300">
+                                <thead class="border-b border-slate-800 text-xs uppercase text-slate-400">
+                                    <tr>
+                                        <th class="py-3 px-4">Parça Adı</th>
+                                        <th class="py-3 px-4">Miktar</th>
+                                        <th class="py-3 px-4 text-right">İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. TEKLİF OLUŞTURUCU SEKMESİ -->
+                <div id="tab-quote" class="hidden space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+                            <i data-lucide="file-text" class="w-5 h-5 text-cyan-400"></i>
+                            <span>Fiyat Teklifi Düzenle</span>
+                        </h3>
+                        <form id="quoteForm" onsubmit="app.saveQuote(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Müşteri Adı</label>
+                                    <input type="text" id="qte-client" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Toplam Tutar (TL)</label>
+                                    <input type="number" id="qte-amount" step="0.01" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-xl transition text-sm">Teklifi Kaydet ve Listele</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <h4 class="text-md font-semibold text-white mb-3">Kayıtlı Teklifler</h4>
+                        <div id="quoteList" class="space-y-3"></div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
     </div>
 
-    <!-- ÜST MENÜ -->
-    <header id="top-navbar" class="screen-only bg-slate-900 text-white shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-extrabold text-white text-base shadow">AK</div>
-                <div>
-                    <h1 class="text-sm sm:text-base font-extrabold tracking-tight leading-tight">ASYA KOMPRESÖR</h1>
-                    <p class="text-[11px] text-slate-400">Bulut Senkronize Yönetim Sistemi</p>
-                </div>
-            </div>
-            <button type="button" onclick="lockApp()" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-extrabold">Çıkış / Kilitle</button>
-        </div>
-    </header>
-
-    <!-- ANA İÇERİK ALANI -->
-    <main class="max-w-5xl mx-auto px-4 pt-6 space-y-6">
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <h2 class="text-lg font-extrabold text-blue-950">Hoş Geldiniz, Cengiz Bey</h2>
-                <p class="text-xs text-slate-600 font-medium mt-0.5">Sistem ve bulut veri havuzu (Gist) aktif olarak çalışmaktadır.</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="syncDataManual()" class="px-4 py-2 bg-blue-900 text-white text-xs font-bold rounded-xl shadow">Verileri Eşitle</button>
-            </div>
-        </div>
-
-        <div class="a4-sheet p-6 rounded-2xl text-slate-900">
-            <div class="flex justify-between items-center border-b-2 border-blue-950 pb-4 mb-4">
-                <div>
-                    <div class="text-xl font-extrabold text-blue-950">ASYA KOMPRESÖR</div>
-                    <div class="text-xs font-extrabold text-blue-800">CENGİZ AKTAN — Endüstriyel Kompresör Servisi</div>
-                </div>
-                <div class="text-right">
-                    <div class="bg-blue-950 text-white px-3.5 py-1.5 rounded-lg text-xs font-extrabold">SERVİS &amp; STOK MERKEZİ</div>
-                </div>
-            </div>
-            <p class="text-sm text-slate-700">Tüm cihazlarınız arasında ortak çalışan altyapı hazır. Buradan servis kayıtlarınızı ve stok durumunuzu yönetebilirsiniz.</p>
-        </div>
-    </main>
-
-    <!-- TOAST BİLDİRİMİ -->
-    <div id="toast-box" class="fixed bottom-4 right-4 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold border border-slate-700"></div>
-
     <script>
-        let state = {
-            customers: [],
-            stock: []
-        };
-
-        function handleLogin(e) {
-            e.preventDefault();
-            const pin = document.getElementById('login-pin-input').value;
-            if(pin) {
-                document.getElementById('login-lock-screen').style.display = 'none';
-                showToast("Sisteme başarıyla giriş yapıldı.");
-            } else {
-                alert('Lütfen şifre giriniz');
+        class CompressorApp {
+            constructor() {
+                this.state = {
+                    services: JSON.parse(localStorage.getItem('asya_services')) || [],
+                    stock: JSON.parse(localStorage.getItem('asya_stock')) || [
+                        { id: 1, name: 'Vidalı Kompresör Yağı (20L)', qty: 12 },
+                        { id: 2, name: 'Hava Filtresi', qty: 25 },
+                        { id: 3, name: 'Yağ Filtresi', qty: 18 }
+                    ],
+                    quotes: JSON.parse(localStorage.getItem('asya_quotes')) || []
+                };
+                this.init();
             }
-        }
 
-        function lockApp() {
-            document.getElementById('login-lock-screen').style.display = 'flex';
-        }
-
-        function showToast(msg) {
-            const box = document.getElementById('toast-box');
-            box.textContent = msg;
-            box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 3000);
-        }
-
-        async function syncDataManual() {
-            showToast("Bulut bağlantısı kontrol ediliyor...");
-            if (!GIST_ID || GIST_ID.includes("BURAYA")) {
-                showToast("Gist ID henüz ayarlanmamış.");
-                return;
+            init() {
+                this.render();
+                document.getElementById('currentTime').innerText = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
             }
-            try {
-                const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
-                const json = await res.json();
-                if (json.files && json.files["asya_kompresor_veri.json"]) {
-                    showToast("Buluttan veriler başarıyla çekildi!");
+
+            switchTab(tabId) {
+                ['dashboard', 'service', 'stock', 'quote'].forEach(t => {
+                    document.getElementById(`tab-${t}`).classList.add('hidden');
+                    const btn = document.getElementById(`btn-${t}`);
+                    btn.classList.remove('bg-cyan-600', 'text-white', 'shadow-lg', 'shadow-cyan-900/20');
+                    btn.classList.add('bg-slate-900', 'text-slate-300', 'border', 'border-slate-800');
+                });
+                document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+                const activeBtn = document.getElementById(`btn-${tabId}`);
+                activeBtn.classList.remove('bg-slate-900', 'text-slate-300', 'border', 'border-slate-800');
+                activeBtn.classList.add('bg-cyan-600', 'text-white', 'shadow-lg', 'shadow-cyan-900/20');
+            }
+
+            saveData() {
+                localStorage.setItem('asya_services', JSON.stringify(this.state.services));
+                localStorage.setItem('asya_stock', JSON.stringify(this.state.stock));
+                localStorage.setItem('asya_quotes', JSON.stringify(this.state.quotes));
+                this.render();
+            }
+
+            saveService(e) {
+                e.preventDefault();
+                const client = document.getElementById('srv-client').value;
+                const model = document.getElementById('srv-model').value;
+                const details = document.getElementById('srv-details').value;
+
+                this.state.services.unshift({
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString('tr-TR'),
+                    client, model, details
+                });
+
+                document.getElementById('serviceForm').reset();
+                this.saveData();
+            }
+
+            saveStock(e) {
+                e.preventDefault();
+                const name = document.getElementById('stk-name').value;
+                const qty = parseInt(document.getElementById('stk-qty').value);
+
+                this.state.stock.push({ id: Date.now(), name, qty });
+                document.getElementById('stockForm').reset();
+                this.saveData();
+            }
+
+            deleteStock(id) {
+                this.state.stock = this.state.stock.filter(s => s.id !== id);
+                this.saveData();
+            }
+
+            saveQuote(e) {
+                e.preventDefault();
+                const client = document.getElementById('qte-client').value;
+                const amount = parseFloat(document.getElementById('qte-amount').value);
+
+                this.state.quotes.unshift({
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString('tr-TR'),
+                    client, amount
+                });
+
+                document.getElementById('quoteForm').reset();
+                this.saveData();
+            }
+
+            resetData() {
+                if (confirm('Tüm yerel veriler sıfırlanacak. Emin misiniz?')) {
+                    localStorage.clear();
+                    location.reload();
                 }
-            } catch (e) {
-                showToast("Senkronizasyon başarısız.");
+            }
+
+            render() {
+                // İstatistikler
+                document.getElementById('stat-stock-count').innerText = this.state.stock.reduce((acc, item) => acc + item.qty, 0);
+                document.getElementById('stat-service-count').innerText = this.state.services.length;
+                document.getElementById('stat-quote-count').innerText = this.state.quotes.length;
+
+                // Servis Listesi
+                const sList = document.getElementById('serviceList');
+                sList.innerHTML = this.state.services.length === 0 ? '<p class="text-sm text-slate-500">Henüz kayıtlı servis raporu yok.</p>' :
+                    this.state.services.map(s => `
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-1">
+                            <div class="flex justify-between items-center text-xs text-slate-400">
+                                <span class="font-semibold text-cyan-400">${s.client}</span>
+                                <span>${s.date}</span>
+                            </div>
+                            <p class="text-sm font-medium text-white">Model: ${s.model}</p>
+                            <p class="text-xs text-slate-300">İşlem: ${s.details}</p>
+                        </div>
+                    `).join('');
+
+                // Stok Tablosu
+                const stBody = document.getElementById('stockTableBody');
+                stBody.innerHTML = this.state.stock.length === 0 ? '<tr><td colspan="3" class="py-4 text-center text-slate-500">Stokta parça bulunmuyor.</td></tr>' :
+                    this.state.stock.map(st => `
+                        <tr class="border-b border-slate-800/50">
+                            <td class="py-3 px-4 font-medium text-white">${st.name}</td>
+                            <td class="py-3 px-4"><span class="bg-cyan-950 text-cyan-300 px-2.5 py-1 rounded-lg text-xs border border-cyan-800/50">${st.qty} Adet</span></td>
+                            <td class="py-3 px-4 text-right">
+                                <button onclick="app.deleteStock(${st.id})" class="text-red-400 hover:text-red-300 text-xs bg-red-950/30 px-2.5 py-1 rounded-lg border border-red-900/50">Sil</button>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                // Teklif Listesi
+                const qList = document.getElementById('quoteList');
+                qList.innerHTML = this.state.quotes.length === 0 ? '<p class="text-sm text-slate-500">Henüz kayıtlı teklif yok.</p>' :
+                    this.state.quotes.map(q => `
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-semibold text-white">${q.client}</p>
+                                <span class="text-xs text-slate-400">${q.date}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-emerald-400">${q.amount.toLocaleString('tr-TR')} TL</span>
+                            </div>
+                        </div>
+                    `).join('');
+
+                lucide.createIcons();
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            showToast("Sistem hazır.");
-        });
+        const app = new CompressorApp();
     </script>
 </body>
 </html>
